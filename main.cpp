@@ -5,19 +5,20 @@ namespace v = std::views;
 #endif
 namespace speed {
 namespace ds {
-    template <unsigned long = 1000000007>
+    template <long = 1000000007>
     struct mint;
     struct dsu;
 }
 namespace algo {
     template <typename T>
     constexpr auto binary_expo(T, unsigned long) noexcept -> T;
+    template <typename T>
+    constexpr auto binomial_coeff(T n, T r) -> T;
+    template <typename T>
+    constexpr auto factorial(T n) -> T;
     template <typename Container = std::vector<std::string>>
     auto split(std::string const&, std::string_view = "") -> Container;
-    template <unsigned long Mod>
-    constexpr auto binomial_coeff(ds::mint<Mod> n, ds::mint<Mod> r) -> ds::mint<Mod>;
-    template <unsigned long Mod>
-    constexpr auto factorial(ds::mint<Mod> n) -> ds::mint<Mod>;
+
 }
 namespace io {
     static int const pretty_index = std::ios_base::xalloc(); // For pretty printing
@@ -63,7 +64,7 @@ namespace io {
     auto operator<<(std::ostream&, std::tuple<Ts...> const&) -> std::ostream&;
     template <typename T, typename U>
     auto operator<<(std::ostream&, std::pair<T, U> const&) -> std::ostream&;
-    template <int Mod>
+    template <long Mod>
     auto operator<<(std::ostream&, ds::mint<Mod> const&) -> std::ostream&;
     template <typename, typename = void>
     struct is_scannable : std::false_type { };
@@ -102,7 +103,7 @@ namespace io {
     }
 }
 namespace ds {
-    template <unsigned long Mod>
+    template <long Mod>
     struct mint {
         static constexpr long mod = Mod;
         constexpr mint()          = default;
@@ -133,6 +134,13 @@ namespace ds {
         {
             *this = *this / o;
             return *this;
+        }
+        constexpr auto operator++() noexcept -> mint& { return *this += 1; }
+        constexpr auto operator++(int) noexcept -> mint
+        {
+            auto temp  = *this;
+            *this     += 1;
+            return temp;
         }
         constexpr auto operator==(mint const& other) const noexcept -> bool { return x == other.x; };
         constexpr auto operator!=(mint const& other) const noexcept -> bool { return !(*this == other); }
@@ -208,6 +216,28 @@ namespace algo {
         }
         return result;
     };
+    template <typename T>
+    constexpr auto binomial_coeff(T n, T r) -> T
+    {
+        if (r > n - r) {
+            r = n - r;
+        }
+        T prod { 1 };
+        for (T i = 0; i != r; i++) {
+            prod *= (n - i);
+            prod /= i + 1;
+        }
+        return prod;
+    }
+    template <typename T>
+    constexpr auto factorial(T n) -> T
+    {
+        T prod { 1 };
+        for (T i = 2; i <= n; i++) {
+            prod *= i;
+        }
+        return prod;
+    }
     template <typename Container>
     auto split(std::string const& line, std::string_view delim) -> Container
     {
@@ -225,29 +255,6 @@ namespace algo {
         }
         cont.insert(std::end(cont), line.substr(s));
         return cont;
-    }
-    template <unsigned long Mod>
-    constexpr auto binomial_coeff(ds::mint<Mod> n, ds::mint<Mod> r) -> ds::mint<Mod>
-    {
-        using ntype = ds::mint<Mod>;
-        if (r > n - r) {
-            r = n - r;
-        }
-        ntype prod { 1 };
-        for (int i = 0; i != r; i++) {
-            prod *= (n - i);
-            prod /= i + 1;
-        }
-        return prod;
-    }
-    template <unsigned long Mod>
-    constexpr auto factorial(ds::mint<Mod> n) -> ds::mint<Mod>
-    {
-        ds::mint<Mod> prod { 1 };
-        for (int i = 2; i <= n; i++) {
-            prod *= i;
-        }
-        return prod;
     }
 }
 namespace io {
@@ -449,7 +456,7 @@ namespace io {
         }
         return os;
     }
-    template <int Mod>
+    template <long Mod>
     auto operator<<(std::ostream& os, ds::mint<Mod> const& m) -> std::ostream& { return os << m.X(); }
     template <typename... Ts>
     void scan(std::istream& is, Ts&... args)
@@ -478,26 +485,16 @@ namespace io {
 }
 using namespace std;
 using ll = long long;
-using speed::algo::binary_expo;
-using speed::algo::binomial_coeff;
-using speed::algo::split;
-using speed::ds::mint;
-using speed::io::debug;
-using speed::io::print;
-using speed::io::println;
-using speed::io::scan;
-using speed::io::scanln;
-using speed::io::operator<<;
-using speed::io::operator>>;
-using speed::ds::dsu;
+using namespace speed::algo;
+using namespace speed::ds;
+using namespace speed::io;
 
 int main()
 {
     ios_base::sync_with_stdio(0);
     cin.tie(0);
 
-    // int T {};
-    // for (cin >> T; T--;) {
-    // }
-    print(10, 2);
+    int T {};
+    for (cin >> T; T--;) {
+    }
 }
