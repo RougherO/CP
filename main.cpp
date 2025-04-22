@@ -5,7 +5,7 @@ namespace v = std::views;
 #endif
 namespace speed {
 namespace ds {
-    template <long = 1000000007>
+    template <unsigned long = 1000000007>
     struct mint;
     struct dsu;
 }
@@ -14,9 +14,9 @@ namespace algo {
     constexpr auto binary_expo(T, unsigned long) noexcept -> T;
     template <typename Container = std::vector<std::string>>
     auto split(std::string const&, std::string_view = "") -> Container;
-    template <long Mod>
+    template <unsigned long Mod>
     constexpr auto binomial_coeff(ds::mint<Mod> n, ds::mint<Mod> r) -> ds::mint<Mod>;
-    template <long Mod>
+    template <unsigned long Mod>
     constexpr auto factorial(ds::mint<Mod> n) -> ds::mint<Mod>;
 }
 namespace io {
@@ -102,7 +102,7 @@ namespace io {
     }
 }
 namespace ds {
-    template <long Mod>
+    template <unsigned long Mod>
     struct mint {
         static constexpr long mod = Mod;
         constexpr mint()          = default;
@@ -226,7 +226,7 @@ namespace algo {
         cont.insert(std::end(cont), line.substr(s));
         return cont;
     }
-    template <long Mod>
+    template <unsigned long Mod>
     constexpr auto binomial_coeff(ds::mint<Mod> n, ds::mint<Mod> r) -> ds::mint<Mod>
     {
         using ntype = ds::mint<Mod>;
@@ -240,7 +240,7 @@ namespace algo {
         }
         return prod;
     }
-    template <long Mod>
+    template <unsigned long Mod>
     constexpr auto factorial(ds::mint<Mod> n) -> ds::mint<Mod>
     {
         ds::mint<Mod> prod { 1 };
@@ -267,25 +267,21 @@ namespace io {
         }
         return is;
     }
-    template <typename Type, typename>
-    auto operator>>(std::istream& is, Type& t) -> std::istream&
+    template <typename TupleType, typename>
+    auto operator>>(std::istream& is, TupleType& t) -> std::istream&
     {
-        return std::apply(
-            [&is](auto&... args) -> std::istream& {
-                return (is >> ... >> args);
-            },
-            t);
+        return std::apply([&is](auto&... args) -> std::istream& { return (is >> ... >> args); },
+                          t);
     }
     namespace detail {
         template <typename Type, typename = std::enable_if_t<is_tuple_like_v<Type>>>
         void print_tuple_like(std::ostream& os, Type const& tuple)
         {
-            std::apply(
-                [&os](auto const&... args) {
-                    size_t n {};
-                    ((os << (n++ != 0 ? (os.iword(pretty_index) ? ", " : " ") : "") << args), ...);
-                },
-                tuple);
+            std::apply([&os](auto const&... args) {
+                size_t n {};
+                ((os << (n++ != 0 ? (os.iword(pretty_index) ? ", " : " ") : "") << args), ...);
+            },
+                       tuple);
         }
     }
     auto operator<<(std::ostream& os, std::string_view strv) -> std::ostream&
