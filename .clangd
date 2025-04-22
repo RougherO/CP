@@ -1,0 +1,5 @@
+If:
+  PathMatch: .*.[ch](pp)?
+  PathExclude: (build|submodules)/.*
+CompileFlags:
+  CompilationDatabase: build
