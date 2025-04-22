@@ -77,18 +77,18 @@ namespace io {
     struct is_printable<T, std::void_t<decltype(std::declval<std::ostream&>() << std::declval<std::decay_t<T>&>())>> : std::true_type { };
     template <typename T>
     constexpr bool is_printable_v = is_printable<T>::value;
-    template <typename... Ts>
-    void print(std::ostream&, Ts const&...);
-    template <typename... Ts>
-    void print(Ts const&... args) { print(std::cout, args...); }
-    template <typename... Ts>
+    template <char... Seps, typename... Ts>
+    void print(std::ostream& os, Ts const&... args);
+    template <char... Seps, typename... Ts>
+    void print(Ts const&... args) { print<Seps...>(std::cout, args...); }
+    template <char... Seps, typename... Ts>
     void println(std::ostream& os, Ts const&... args)
     {
-        print(os, args...);
+        print<Seps...>(os, args...);
         os << "\n";
     }
-    template <typename... Ts>
-    void println(Ts const&... args) { println(std::cout, args...); }
+    template <char... Seps, typename... Ts>
+    void println(Ts const&... args) { println<Seps...>(std::cout, args...); }
     auto pretty(std::ostream& os) -> std::ostream&
     {
         os.iword(pretty_index) = !os.iword(pretty_index); // set pretty printing to
@@ -97,7 +97,7 @@ namespace io {
     template <typename... Ts>
     void debug(Ts const&... args)
     {
-        println(std::cerr << pretty, args...);
+        println<' '>(std::cerr << pretty, args...);
         std::cerr << pretty;
     }
 }
@@ -464,8 +464,16 @@ namespace io {
         std::getline(is, line);
         return line;
     }
-    template <typename... Ts>
-    void print(std::ostream& os, Ts const&... args) { (os << ... << args); }
+    template <char... Seps, typename... Ts>
+    void print(std::ostream& os, Ts const&... args)
+    {
+        bool first { true };
+        if constexpr (sizeof...(Seps) == 0) {
+            ((first ? (first = false, os << args) : (os << ' ' << args)), ...);
+        } else {
+            ((first ? (first = false, os << args) : ((os << Seps), ...) << args), ...);
+        }
+    }
 }
 }
 using namespace std;
@@ -488,7 +496,8 @@ int main()
     ios_base::sync_with_stdio(0);
     cin.tie(0);
 
-    int T {};
-    for (cin >> T; T--;) {
-    }
+    // int T {};
+    // for (cin >> T; T--;) {
+    // }
+    print(10, 2);
 }
