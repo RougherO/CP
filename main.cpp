@@ -277,8 +277,7 @@ namespace io {
     template <typename TupleType, typename>
     auto operator>>(std::istream& is, TupleType& t) -> std::istream&
     {
-        return std::apply([&is](auto&... args) -> std::istream& { return (is >> ... >> args); },
-                          t);
+        return std::apply([&is](auto&... args) -> std::istream& { return (is >> ... >> args); }, t);
     }
     namespace detail {
         template <typename Type, typename = std::enable_if_t<is_tuple_like_v<Type>>>
@@ -462,7 +461,7 @@ namespace io {
     void scan(std::istream& is, Ts&... args)
     {
         static_assert(sizeof...(Ts) > 0, "need at least one element to scan");
-        static_assert(std::conjunction_v<is_scannable<Ts>...>, "not all types are scannable");
+        static_assert(std::conjunction_v<is_scannable<Ts>...>, "not all types are scannable"); // GCC 11.1 bug (hackerrank, cses) -- causes compilation error something related to ADL
         auto holder = std::make_tuple(std::ref(args)...);
         is >> holder;
     }
@@ -485,9 +484,19 @@ namespace io {
 }
 using namespace std;
 using ll = long long;
-using namespace speed::algo;
-using namespace speed::ds;
-using namespace speed::io;
+using speed::algo::binary_expo;
+using speed::algo::binomial_coeff;
+using speed::algo::factorial;
+using speed::algo::split;
+using speed::ds::dsu;
+using speed::ds::mint;
+using speed::io::print;
+using speed::io::println;
+using speed::io::scan;
+using speed::io::scanln;
+// for ADL lookup -- workaround for the compiler bug
+using speed::io::operator>>;
+using speed::io::operator<<;
 
 int main()
 {
