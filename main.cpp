@@ -156,7 +156,7 @@ namespace ds {
         long x {};
     };
     struct dsu {
-        dsu(int n)
+        dsu(size_t n)
             : m_rank(n)
             , m_parent(n)
         {
@@ -169,21 +169,22 @@ namespace ds {
             }
             return m_parent[node] = parent(m_parent[node]);
         }
-        void unite(size_t node1, size_t node2) noexcept
+        auto unite(size_t node1, size_t node2) noexcept -> bool
         {
             size_t p1 = parent(node1);
             size_t p2 = parent(node2);
             if (p1 == p2) {
-                return;
+                return false;
             }
             if (m_rank[p1] > m_rank[p2]) {
                 m_parent[p2] = p1;
-            } else if (m_rank[p1] < m_rank[p2]) {
-                m_parent[p1] = p2;
             } else {
                 m_parent[p1] = p2;
-                m_rank[p2]++;
+                if (m_rank[p1] == m_rank[p2]) {
+                    m_rank[p2]++;
+                }
             }
+            return true;
         }
         auto count() const noexcept -> size_t
         {
