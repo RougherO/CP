@@ -495,8 +495,8 @@ using speed::io::println;
 using speed::io::scan;
 using speed::io::scanln;
 // for ADL lookup -- workaround for the compiler bug
-using speed::io::operator>>;
 using speed::io::operator<<;
+using speed::io::operator>>;
 
 int main()
 {
