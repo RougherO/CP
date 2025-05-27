@@ -10,15 +10,16 @@ namespace ds {
     struct dsu;
 }
 namespace algo {
+    template <typename Container = std::vector<std::string>>
+    auto split(std::string const&, std::string_view = "") -> Container;
+}
+namespace math {
     template <typename T>
     constexpr auto binary_expo(T, unsigned long) noexcept -> T;
     template <typename T>
     constexpr auto binomial_coeff(T n, T r) -> T;
     template <typename T>
     constexpr auto factorial(T n) -> T;
-    template <typename Container = std::vector<std::string>>
-    auto split(std::string const&, std::string_view = "") -> Container;
-
 }
 namespace io {
     static int const pretty_index = std::ios_base::xalloc(); // For pretty printing
@@ -204,6 +205,26 @@ namespace ds {
     };
 }
 namespace algo {
+    template <typename Container>
+    auto split(std::string const& line, std::string_view delim) -> Container
+    {
+        Container cont;
+        if (delim.size() == 0) {
+            std::stringstream ss { line };
+            std::move(std::istream_iterator<std::string> { ss }, std::istream_iterator<std::string> {}, std::back_inserter(cont));
+            return cont;
+        }
+        size_t s = 0;
+        size_t e = 0;
+        while ((e = line.find(delim, s)) != std::string::npos) {
+            cont.insert(std::end(cont), line.substr(s, e - s));
+            s = e + delim.size();
+        }
+        cont.insert(std::end(cont), line.substr(s));
+        return cont;
+    }
+}
+namespace math {
     template <typename T>
     constexpr auto binary_expo(T base, unsigned long pow) noexcept -> T
     {
@@ -238,24 +259,6 @@ namespace algo {
             prod *= i;
         }
         return prod;
-    }
-    template <typename Container>
-    auto split(std::string const& line, std::string_view delim) -> Container
-    {
-        Container cont;
-        if (delim.size() == 0) {
-            std::stringstream ss { line };
-            std::move(std::istream_iterator<std::string> { ss }, std::istream_iterator<std::string> {}, std::back_inserter(cont));
-            return cont;
-        }
-        size_t s = 0;
-        size_t e = 0;
-        while ((e = line.find(delim, s)) != std::string::npos) {
-            cont.insert(std::end(cont), line.substr(s, e - s));
-            s = e + delim.size();
-        }
-        cont.insert(std::end(cont), line.substr(s));
-        return cont;
     }
 }
 namespace io {
@@ -484,10 +487,8 @@ namespace io {
 }
 }
 using namespace std;
+using namespace speed;
 using ll = long long;
-using speed::algo::binary_expo;
-using speed::algo::binomial_coeff;
-using speed::algo::factorial;
 using speed::algo::split;
 using speed::ds::dsu;
 using speed::ds::mint;
@@ -495,6 +496,9 @@ using speed::io::print;
 using speed::io::println;
 using speed::io::scan;
 using speed::io::scanln;
+using speed::math::binary_expo;
+using speed::math::binomial_coeff;
+using speed::math::factorial;
 // for ADL lookup -- workaround for the compiler bug
 using speed::io::operator<<;
 using speed::io::operator>>;
@@ -506,5 +510,6 @@ int main()
 
     int T {};
     for (cin >> T; T--;) {
+        algo::
     }
 }
