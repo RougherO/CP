@@ -9,7 +9,7 @@ add_executable(${TARGET} main.cpp)
 
 # add_subdirectory(tests)
 
-target_compile_features(${TARGET} PUBLIC cxx_std_20)
+target_compile_features(${TARGET} PUBLIC cxx_std_23)
 target_compile_options(
     ${TARGET} PRIVATE 
     -Wall -Wpedantic -Wextra -Wshadow -Wno-sign-compare 

@@ -115,7 +115,7 @@ namespace ds {
         constexpr auto operator+(mint const& o) const noexcept -> mint { return (x + o.x) % mod; }
         constexpr auto operator-(mint const& o) const noexcept -> mint { return (x - o.x) % mod + (x < o.x ? mod : 0); }
         constexpr auto operator*(mint const& o) const noexcept -> mint { return (x * o.x) % mod; }
-        constexpr auto operator/(mint const& o) const noexcept -> mint { return mint { x } * algo::binary_expo(o, mod - 2); }
+        constexpr auto operator/(mint const& o) const noexcept -> mint { return mint { x } * math::binary_expo(o, mod - 2); }
         constexpr auto operator+=(mint const& o) noexcept -> mint&
         {
             *this = *this + o;
@@ -510,6 +510,5 @@ int main()
 
     int T {};
     for (cin >> T; T--;) {
-        algo::
     }
 }
