@@ -5,7 +5,7 @@ namespace v = std::views;
 #endif
 namespace speed {
 namespace ds {
-    template <long = 1000000007>
+    template <long long = 1000000007>
     struct mint;
     struct dsu;
 }
@@ -15,14 +15,13 @@ namespace algo {
 }
 namespace math {
     template <typename T>
-    constexpr auto binary_expo(T, unsigned long) noexcept -> T;
+    constexpr auto binary_expo(T, unsigned long long) noexcept -> T;
     template <typename T>
     constexpr auto binomial_coeff(T n, T r) -> T;
     template <typename T>
     constexpr auto factorial(T n) -> T;
 }
-namespace io {
-    static int const pretty_index = std::ios_base::xalloc(); // For pretty printing
+namespace utils {
     template <typename>
     struct is_tuple_like : std::false_type { };
     template <typename... Ts>
@@ -33,6 +32,10 @@ namespace io {
     struct is_tuple_like<std::array<T, N>> : std::true_type { };
     template <typename T>
     constexpr bool is_tuple_like_v = is_tuple_like<T>::value;
+}
+namespace io {
+    static int const pretty_index = std::ios_base::xalloc(); // For pretty printing
+    using utils::is_tuple_like_v;
     template <int Mod>
     auto operator>>(std::istream&, ds::mint<Mod>&) -> std::istream&;
     template <typename... Params>
@@ -43,8 +46,8 @@ namespace io {
     void scan(std::istream&, Ts&...);
     template <typename... Ts>
     void scan(Ts&... args) { scan(std::cin, args...); }
-    auto scanln(std::istream&, std::string&) -> std::string;
-    auto scanln(std::string& line) -> std::string { return scanln(std::cin, line); }
+    void scanln(std::istream&, std::string&);
+    void scanln(std::string& line) { scanln(std::cin, line); }
     auto operator<<(std::ostream&, std::string_view) -> std::ostream&;
     auto operator<<(std::ostream&, std::string const&) -> std::ostream&;
     template <typename Type, typename = std::enable_if_t<is_tuple_like_v<Type>>>
@@ -65,20 +68,8 @@ namespace io {
     auto operator<<(std::ostream&, std::tuple<Ts...> const&) -> std::ostream&;
     template <typename T, typename U>
     auto operator<<(std::ostream&, std::pair<T, U> const&) -> std::ostream&;
-    template <long Mod>
+    template <long long Mod>
     auto operator<<(std::ostream&, ds::mint<Mod> const&) -> std::ostream&;
-    template <typename, typename = void>
-    struct is_scannable : std::false_type { };
-    template <typename T>
-    struct is_scannable<T, std::void_t<decltype(std::declval<std::istream&>() >> std::declval<std::decay_t<T>&>())>> : std::true_type { };
-    template <typename T>
-    constexpr bool is_scannable_v = is_scannable<T>::value;
-    template <typename, typename = void>
-    struct is_printable : std::false_type { };
-    template <typename T>
-    struct is_printable<T, std::void_t<decltype(std::declval<std::ostream&>() << std::declval<std::decay_t<T>&>())>> : std::true_type { };
-    template <typename T>
-    constexpr bool is_printable_v = is_printable<T>::value;
     template <char... Seps, typename... Ts>
     void print(std::ostream& os, Ts const&... args);
     template <char... Seps, typename... Ts>
@@ -97,18 +88,30 @@ namespace io {
         return os;
     }
     template <typename... Ts>
-    void debug(Ts const&... args)
-    {
-        println<' '>(std::cerr << pretty, args...);
-        std::cerr << pretty;
-    }
+    void debug(char const* name_str, Ts const&... args);
+}
+namespace utils {
+    using io::operator<<;
+    using io::operator>>;
+    template <typename, typename = void>
+    struct is_scannable : std::false_type { };
+    template <typename T>
+    struct is_scannable<T, std::void_t<decltype(std::declval<std::istream&>() >> std::declval<std::decay_t<T>&>())>> : std::true_type { };
+    template <typename T>
+    constexpr bool is_scannable_v = is_scannable<T>::value;
+    template <typename, typename = void>
+    struct is_printable : std::false_type { };
+    template <typename T>
+    struct is_printable<T, std::void_t<decltype(std::declval<std::ostream&>() << std::declval<std::decay_t<T>&>())>> : std::true_type { };
+    template <typename T>
+    constexpr bool is_printable_v = is_printable<T>::value;
 }
 namespace ds {
-    template <long Mod>
+    template <long long Mod>
     struct mint {
-        static constexpr long mod = Mod;
-        constexpr mint()          = default;
-        constexpr mint(long value)
+        static constexpr long long mod = Mod;
+        constexpr mint()               = default;
+        constexpr mint(long long value)
             : x { value % mod }
         {
         }
@@ -150,11 +153,11 @@ namespace ds {
         constexpr auto operator<=(mint const& other) const noexcept -> bool { return !(*this > other); }
         constexpr auto operator>=(mint const& other) const noexcept -> bool { return !(*this < other); }
         constexpr explicit operator int() const noexcept { return x; }
-        constexpr void X(long value) noexcept { x = value % Mod; }
-        constexpr auto X() const noexcept -> long { return x; }
+        constexpr void X(long long value) noexcept { x = value % Mod; }
+        constexpr auto X() const noexcept -> long long { return x; }
 
     private:
-        long x {};
+        long long x {};
     };
     struct dsu {
         dsu(size_t n)
@@ -226,7 +229,7 @@ namespace algo {
 }
 namespace math {
     template <typename T>
-    constexpr auto binary_expo(T base, unsigned long pow) noexcept -> T
+    constexpr auto binary_expo(T base, unsigned long long pow) noexcept -> T
     {
         T result { 1 };
         while (pow != 0) {
@@ -262,10 +265,10 @@ namespace math {
     }
 }
 namespace io {
-    template <int Mod>
+    template <long long Mod>
     auto operator>>(std::istream& is, ds::mint<Mod>& m) -> std::istream&
     {
-        long x {};
+        long long x {};
         is >> x;
         m.X(x);
         return is;
@@ -292,6 +295,11 @@ namespace io {
                 ((os << (n++ != 0 ? (os.iword(pretty_index) ? ", " : " ") : "") << args), ...);
             },
                        tuple);
+        }
+        template <std::size_t... I, typename... Ts>
+        void debug_impl(std::vector<std::string> const& names, std::index_sequence<I...>, Ts const&... args)
+        {
+            (println("\t", names[I], ": ", args), ...);
         }
     }
     auto operator<<(std::ostream& os, std::string_view strv) -> std::ostream&
@@ -459,20 +467,20 @@ namespace io {
         }
         return os;
     }
-    template <long Mod>
+    template <long long Mod>
     auto operator<<(std::ostream& os, ds::mint<Mod> const& m) -> std::ostream& { return os << m.X(); }
     template <typename... Ts>
     void scan(std::istream& is, Ts&... args)
     {
+        using utils::is_scannable;
         static_assert(sizeof...(Ts) > 0, "need at least one element to scan");
         static_assert(std::conjunction_v<is_scannable<Ts>...>, "not all types are scannable"); // GCC 11.1 bug (hackerrank, cses) -- causes compilation error something related to ADL
         auto holder = std::make_tuple(std::ref(args)...);
         is >> holder;
     }
-    auto scanln(std::istream& is, std::string& line) -> std::string
+    void scanln(std::istream& is, std::string& line)
     {
-        std::getline(is, line);
-        return line;
+        std::getline(is >> std::ws, line);
     }
     template <char... Seps, typename... Ts>
     void print(std::ostream& os, Ts const&... args)
@@ -484,31 +492,44 @@ namespace io {
             ((first ? (first = false, os << args) : ((os << Seps), ...) << args), ...);
         }
     }
+    template <typename... Ts>
+    void debug(char const* name_str, Ts const&... args)
+    {
+        println("{");
+        auto names = algo::split(name_str, ", ");
+        std::cout << pretty;
+        detail::debug_impl(names, std::make_index_sequence<sizeof...(args)> {}, args...);
+        std::cout << pretty;
+        println("}");
+    }
 }
 }
-using namespace std;
 using namespace speed;
-using ll = long long;
-using speed::algo::split;
-using speed::ds::dsu;
-using speed::ds::mint;
-using speed::io::print;
-using speed::io::println;
-using speed::io::scan;
-using speed::io::scanln;
-using speed::math::binary_expo;
-using speed::math::binomial_coeff;
-using speed::math::factorial;
+using algo::split;
+using ds::dsu;
+using ds::mint;
+using io::print;
+using io::println;
+using io::scan;
+using io::scanln;
+using math::binary_expo;
+using math::binomial_coeff;
+using math::factorial;
 // for ADL lookup -- workaround for the compiler bug
-using speed::io::operator<<;
-using speed::io::operator>>;
-
+using io::operator<<;
+using io::operator>>;
+#define DEBUG(...)                            \
+    do {                                      \
+        io::debug(#__VA_ARGS__, __VA_ARGS__); \
+    } while (false)
+using namespace std;
+using ll = long long;
 int main()
 {
-    ios_base::sync_with_stdio(0);
-    cin.tie(0);
+    ios_base::sync_with_stdio(false);
+    cin.tie(nullptr);
 
     int T {};
-    for (cin >> T; T--;) {
+    for (scan(T); T--;) {
     }
 }
