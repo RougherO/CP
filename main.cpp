@@ -34,6 +34,12 @@ namespace utils {
     struct is_tuple_like<std::array<T, N>> : std::true_type { };
     template <typename T>
     constexpr bool is_tuple_like_v = is_tuple_like<T>::value;
+    template <typename T, typename = void>
+    struct is_iterator : std::false_type { };
+    template <typename T>
+    struct is_iterator<T, std::void_t<typename std::iterator_traits<T>::iterator_category>> : std::true_type { };
+    template <typename T>
+    constexpr bool is_iterator_v = is_iterator<T>::value;
 }
 namespace io {
     static int const pretty_index = std::ios_base::xalloc(); // For pretty printing
@@ -50,6 +56,9 @@ namespace io {
     void scan(Ts&... args) { scan(std::cin, args...); }
     void scanln(std::istream&, std::string&);
     void scanln(std::string& line) { scanln(std::cin, line); }
+    using utils::is_iterator_v;
+    template <typename T, std::enable_if_t<is_iterator_v<T>>>
+    auto operator<<(std::ostream&, std::pair<T, T>) -> std::ostream&;
     auto operator<<(std::ostream&, std::string_view) -> std::ostream&;
     auto operator<<(std::ostream&, std::string const&) -> std::ostream&;
     template <typename Type, typename = std::enable_if_t<is_tuple_like_v<Type>>>
@@ -72,10 +81,22 @@ namespace io {
     auto operator<<(std::ostream&, std::pair<T, U> const&) -> std::ostream&;
     template <long long Mod>
     auto operator<<(std::ostream&, ds::mint<Mod> const&) -> std::ostream&;
+    template <char... Seps, typename T, typename = std::enable_if_t<is_iterator_v<T>>>
+    void put(std::ostream&, T, T);
+    template <char... Seps, typename T, typename = std::enable_if_t<is_iterator_v<T>>>
+    void put(T first, T last) { put<Seps...>(std::cout, first, last); }
     template <char... Seps, typename... Ts>
     void put(std::ostream& os, Ts const&... args);
     template <char... Seps, typename... Ts>
     void put(Ts const&... args) { put<Seps...>(std::cout, args...); }
+    template <char... Seps, typename T, typename = std::enable_if_t<is_iterator_v<T>>>
+    void putln(std::ostream& os, T first, T last)
+    {
+        put<Seps...>(os, first, last);
+        os << "\n";
+    }
+    template <char... Seps, typename T, typename = std::enable_if_t<is_iterator_v<T>>>
+    void putln(T first, T last) { putln<Seps...>(std::cout, first, last); }
     template <char... Seps, typename... Ts>
     void putln(std::ostream& os, Ts const&... args)
     {
@@ -484,6 +505,22 @@ namespace io {
     {
         std::getline(is >> std::ws, line);
     }
+    template <char... Seps, typename T, typename>
+    void put(std::ostream& os, T first, T last)
+    {
+        if (first == last) {
+            return;
+        }
+        os << *first++;
+        while (first != last) {
+            if constexpr (sizeof...(Seps) == 0) {
+                os << ' ';
+            } else {
+                (os << ... << Seps);
+            }
+            os << *first++;
+        }
+    }
     template <char... Seps, typename... Ts>
     void put(std::ostream& os, Ts const&... args)
     {
@@ -491,7 +528,7 @@ namespace io {
         if constexpr (sizeof...(Seps) == 0) {
             ((first ? (first = false, os << args) : (os << ' ' << args)), ...);
         } else {
-            ((first ? (first = false, os << args) : ((os << Seps), ...) << args), ...);
+            ((first ? (first = false, os << args) : (os << ... << Seps) << args), ...);
         }
     }
     template <typename... Ts>
@@ -533,16 +570,5 @@ int main()
 
     int T {};
     for (scan(T); T--;) {
-        int n;
-        scan(n);
-        for (int i = 2; i * i <= n; i++) {
-            if (n % i == 0) {
-                int x = n / i;
-                putln(x, n - x);
-                goto skip;
-            }
-        }
-        putln(1, n - 1);
-    skip:
     }
 }
