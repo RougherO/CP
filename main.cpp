@@ -1,4 +1,6 @@
 #include <bits/stdc++.h>
+
+#include <cstddef>
 #ifdef __cpp_lib_ranges
 namespace r = std::ranges;
 namespace v = std::views;
@@ -71,17 +73,17 @@ namespace io {
     template <long long Mod>
     auto operator<<(std::ostream&, ds::mint<Mod> const&) -> std::ostream&;
     template <char... Seps, typename... Ts>
-    void print(std::ostream& os, Ts const&... args);
+    void put(std::ostream& os, Ts const&... args);
     template <char... Seps, typename... Ts>
-    void print(Ts const&... args) { print<Seps...>(std::cout, args...); }
+    void put(Ts const&... args) { put<Seps...>(std::cout, args...); }
     template <char... Seps, typename... Ts>
-    void println(std::ostream& os, Ts const&... args)
+    void putln(std::ostream& os, Ts const&... args)
     {
-        print<Seps...>(os, args...);
+        put<Seps...>(os, args...);
         os << "\n";
     }
     template <char... Seps, typename... Ts>
-    void println(Ts const&... args) { println<Seps...>(std::cout, args...); }
+    void putln(Ts const&... args) { putln<Seps...>(std::cout, args...); }
     auto pretty(std::ostream& os) -> std::ostream&
     {
         os.iword(pretty_index) = !os.iword(pretty_index); // set pretty printing to
@@ -483,7 +485,7 @@ namespace io {
         std::getline(is >> std::ws, line);
     }
     template <char... Seps, typename... Ts>
-    void print(std::ostream& os, Ts const&... args)
+    void put(std::ostream& os, Ts const&... args)
     {
         bool first { true };
         if constexpr (sizeof...(Seps) == 0) {
@@ -495,12 +497,12 @@ namespace io {
     template <typename... Ts>
     void debug(char const* name_str, Ts const&... args)
     {
-        println("{");
+        putln("{");
         auto names = algo::split(name_str, ", ");
         std::cout << pretty;
         detail::debug_impl(names, std::make_index_sequence<sizeof...(args)> {}, args...);
         std::cout << pretty;
-        println("}");
+        putln("}");
     }
 }
 }
@@ -508,8 +510,8 @@ using namespace speed;
 using algo::split;
 using ds::dsu;
 using ds::mint;
-using io::print;
-using io::println;
+using io::put;
+using io::putln;
 using io::scan;
 using io::scanln;
 using math::binary_expo;
@@ -531,5 +533,16 @@ int main()
 
     int T {};
     for (scan(T); T--;) {
+        int n;
+        scan(n);
+        for (int i = 2; i * i <= n; i++) {
+            if (n % i == 0) {
+                int x = n / i;
+                putln(x, n - x);
+                goto skip;
+            }
+        }
+        putln(1, n - 1);
+    skip:
     }
 }
