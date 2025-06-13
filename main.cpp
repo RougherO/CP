@@ -12,6 +12,7 @@ namespace ds {
 namespace algo {
     template <typename Container = std::vector<std::string>>
     auto split(std::string const&, std::string_view = "") -> Container;
+    auto strip(std::string const&) -> std::string;
 }
 namespace utils {
     template <typename>
@@ -251,6 +252,12 @@ namespace algo {
         cont.insert(std::end(cont), line.substr(s));
         return cont;
     }
+    auto strip(std::string const& word) -> std::string
+    {
+        size_t l = word.find_first_not_of(' ');
+        size_t r = word.find_last_not_of(' ');
+        return word.substr(l, r - l + 1);
+    }
 }
 namespace math {
     template <typename T, typename>
@@ -345,7 +352,8 @@ namespace io {
         template <std::size_t... I, typename... Ts>
         void debug_impl(std::vector<std::string> const& names, std::index_sequence<I...>, Ts const&... args)
         {
-            (putln("\t", names[I], ": ", args), ...);
+            using algo::strip;
+            (putln("\t", strip(names[I]), ": ", args), ...);
         }
     }
     auto operator<<(std::ostream& os, std::string_view strv) -> std::ostream&
@@ -558,7 +566,7 @@ namespace io {
     void debug(char const* name_str, Ts const&... args)
     {
         putln("{");
-        auto names = algo::split(name_str, ", ");
+        auto names = algo::split(name_str, ",");
         std::cout << pretty;
         detail::debug_impl(names, std::make_index_sequence<sizeof...(args)> {}, args...);
         std::cout << pretty;
@@ -568,6 +576,7 @@ namespace io {
 }
 using namespace speed;
 using algo::split;
+using algo::strip;
 using ds::dsu;
 using ds::mint;
 using io::put;
