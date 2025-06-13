@@ -13,14 +13,6 @@ namespace algo {
     template <typename Container = std::vector<std::string>>
     auto split(std::string const&, std::string_view = "") -> Container;
 }
-namespace math {
-    template <typename T>
-    constexpr auto binary_expo(T, unsigned long long) noexcept -> T;
-    template <typename T>
-    constexpr auto binomial_coeff(T n, T r) -> T;
-    template <typename T>
-    constexpr auto factorial(T n) -> T;
-}
 namespace utils {
     template <typename>
     struct is_tuple_like : std::false_type { };
@@ -38,6 +30,23 @@ namespace utils {
     struct is_iterator<T, std::void_t<typename std::iterator_traits<T>::iterator_category>> : std::true_type { };
     template <typename T>
     constexpr bool is_iterator_v = is_iterator<T>::value;
+    template <typename T>
+    struct is_integer : std::is_integral<T> { };
+    template <long long Mod>
+    struct is_integer<ds::mint<Mod>> : std::true_type { };
+    template <typename T>
+    constexpr bool is_integer_v = is_integer<T>::value;
+}
+namespace math {
+    using utils::is_integer_v;
+    template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
+    constexpr auto binary_expo(T, unsigned long long) noexcept -> T;
+    template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
+    constexpr auto binomial_coeff(T, T) -> T;
+    template <typename T, typename = std::enable_if_t<is_integer_v<T>>> // use tgamma for floating points
+    constexpr auto factorial(T) -> T;
+    template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
+    constexpr auto is_prime(T) -> bool;
 }
 namespace io {
     static int const pretty_index = std::ios_base::xalloc(); // For pretty printing
