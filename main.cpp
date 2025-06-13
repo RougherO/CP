@@ -139,36 +139,30 @@ namespace utils {
 namespace ds {
     template <long long Mod>
     struct mint {
-        static constexpr long long mod = Mod;
-        constexpr mint()               = default;
+        constexpr mint() = default;
         constexpr mint(long long value)
-            : x { value % mod }
+            : x { value % Mod }
         {
         }
-        constexpr auto operator+(mint const& o) const noexcept -> mint { return (x + o.x) % mod; }
-        constexpr auto operator-(mint const& o) const noexcept -> mint { return (x - o.x) % mod + (x < o.x ? mod : 0); }
-        constexpr auto operator*(mint const& o) const noexcept -> mint { return (x * o.x) % mod; }
-        constexpr auto operator/(mint const& o) const noexcept -> mint { return mint { x } * math::binary_expo(o, mod - 2); }
-        constexpr auto operator+=(mint const& o) noexcept -> mint&
-        {
-            *this = *this + o;
-            return *this;
-        }
-        constexpr auto operator-=(mint const& o) noexcept -> mint&
-        {
-            *this = *this - o;
-            return *this;
-        }
-        constexpr auto operator*=(mint const& o) noexcept -> mint&
-        {
-            *this = *this * o;
-            return *this;
-        }
-        constexpr auto operator/=(mint const& o) noexcept -> mint&
-        {
-            *this = *this / o;
-            return *this;
-        }
+        constexpr auto operator+(mint const& o) const noexcept -> mint { return (x + o.x) % Mod; }
+        constexpr auto operator-(mint const& o) const noexcept -> mint { return (x - o.x) % Mod + (x < o.x ? Mod : 0); }
+        constexpr auto operator*(mint const& o) const noexcept -> mint { return (x * o.x) % Mod; }
+        constexpr auto operator/(mint const& o) const noexcept -> mint { return mint { x } * math::binary_expo(o, Mod - 2); }
+        constexpr auto operator%(mint const& o) const noexcept -> mint { return x % o.x; }
+        constexpr auto operator<<(mint const& o) const noexcept -> mint { return (x << o.x) % Mod; }
+        constexpr auto operator>>(mint const& o) const noexcept -> mint { return (x >> o.x) % Mod; }
+        constexpr auto operator|(mint const& o) const noexcept -> mint { return x | o.x; }
+        constexpr auto operator&(mint const& o) const noexcept -> mint { return x & o.x; }
+        constexpr auto operator~() const noexcept -> mint { return ~x % Mod; }
+        constexpr auto operator+=(mint const& o) noexcept -> mint& { return *this = *this + o; }
+        constexpr auto operator-=(mint const& o) noexcept -> mint& { return *this = *this - o; }
+        constexpr auto operator*=(mint const& o) noexcept -> mint& { return *this = *this * o; }
+        constexpr auto operator/=(mint const& o) noexcept -> mint& { return *this = *this / o; }
+        constexpr auto operator%=(mint const& o) const noexcept -> mint& { return *this = *this % o; }
+        constexpr auto operator<<=(mint const& o) const noexcept -> mint { return *this = *this << o; }
+        constexpr auto operator>>=(mint const& o) const noexcept -> mint { return *this = *this >> o; }
+        constexpr auto operator|=(mint const& o) const noexcept -> mint { return x | o.x; }
+        constexpr auto operator&=(mint const& o) const noexcept -> mint { return x & o.x; }
         constexpr auto operator++() noexcept -> mint& { return *this += 1; }
         constexpr auto operator++(int) noexcept -> mint
         {
@@ -182,6 +176,7 @@ namespace ds {
         constexpr auto operator>(mint const& other) const noexcept -> bool { return !(*this < other) && !(*this == other); }
         constexpr auto operator<=(mint const& other) const noexcept -> bool { return !(*this > other); }
         constexpr auto operator>=(mint const& other) const noexcept -> bool { return !(*this < other); }
+        constexpr auto operator!() const noexcept -> bool { return !x; }
         constexpr explicit operator int() const noexcept { return x; }
         constexpr void X(long long value) noexcept { x = value % Mod; }
         constexpr auto X() const noexcept -> long long { return x; }
@@ -258,7 +253,7 @@ namespace algo {
     }
 }
 namespace math {
-    template <typename T>
+    template <typename T, typename>
     constexpr auto binary_expo(T base, unsigned long long pow) noexcept -> T
     {
         T result { 1 };
@@ -271,7 +266,7 @@ namespace math {
         }
         return result;
     };
-    template <typename T>
+    template <typename T, typename>
     constexpr auto binomial_coeff(T n, T r) -> T
     {
         if (r > n - r) {
@@ -284,7 +279,7 @@ namespace math {
         }
         return prod;
     }
-    template <typename T>
+    template <typename T, typename>
     constexpr auto factorial(T n) -> T
     {
         T prod { 1 };
@@ -292,6 +287,27 @@ namespace math {
             prod *= i;
         }
         return prod;
+    }
+    template <typename T, typename>
+    constexpr auto is_prime(T n) -> bool
+    {
+        switch (n) {
+        case 0:
+        case 1:
+            return false;
+        case 2:
+        case 3:
+            return true;
+        }
+        if (n % 2 == 0 || n % 3 == 0) {
+            return false;
+        }
+        for (T i { 5 }; i * i <= n; i += 2) {
+            if (n % i == 0) {
+                return false;
+            }
+        }
+        return true;
     }
 }
 namespace io {
@@ -561,6 +577,7 @@ using io::scanln;
 using math::binary_expo;
 using math::binomial_coeff;
 using math::factorial;
+using math::is_prime;
 // for ADL lookup -- workaround for the compiler bug
 using io::operator<<;
 using io::operator>>;
