@@ -1,6 +1,4 @@
 #include <bits/stdc++.h>
-
-#include <cstddef>
 #ifdef __cpp_lib_ranges
 namespace r = std::ranges;
 namespace v = std::views;
@@ -322,7 +320,7 @@ namespace io {
         template <std::size_t... I, typename... Ts>
         void debug_impl(std::vector<std::string> const& names, std::index_sequence<I...>, Ts const&... args)
         {
-            (println("\t", names[I], ": ", args), ...);
+            (putln("\t", names[I], ": ", args), ...);
         }
     }
     auto operator<<(std::ostream& os, std::string_view strv) -> std::ostream&
