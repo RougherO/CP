@@ -3,6 +3,20 @@
 namespace r = std::ranges;
 namespace v = std::views;
 #endif
+/**
+ * Made with ❤️
+ *
+ * - C++17 compatible
+ * - Easy and convenient
+ *
+ * For always updated template: https://github.com/RougherO/CP.git
+ * Follow me: https://github.com/RougherO
+ *
+ * If you decide to use the template please attach this section
+ * as well or mention the source as a token of appreciation.
+ *
+ * Thanks
+ */
 namespace speed {
 namespace ds {
     template <long long = 1000000007>
