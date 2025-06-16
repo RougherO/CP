@@ -62,6 +62,10 @@ namespace math {
     constexpr auto factorial(T) -> T;
     template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
     constexpr auto is_prime(T) -> bool;
+    template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
+    constexpr auto floor(T, T) -> T;
+    template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
+    constexpr auto ceil(T, T) -> T;
 }
 namespace io {
     static int const pretty_index = std::ios_base::xalloc(); // For pretty printing
@@ -329,6 +333,16 @@ namespace math {
             }
         }
         return true;
+    }
+    template <typename T, typename>
+    constexpr auto floor(T x, T y) -> T
+    {
+        return x / y;
+    }
+    template <typename T, typename>
+    constexpr auto ceil(T x, T y) -> T
+    {
+        return (x + y - 1) / y;
     }
 }
 namespace io {
@@ -599,7 +613,9 @@ using io::scan;
 using io::scanln;
 using math::binary_expo;
 using math::binomial_coeff;
+using math::ceil;
 using math::factorial;
+using math::floor;
 using math::is_prime;
 // for ADL lookup -- workaround for the compiler bug
 using io::operator<<;
