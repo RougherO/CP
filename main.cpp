@@ -625,7 +625,10 @@ using io::operator>>;
         io::debug(#__VA_ARGS__, __VA_ARGS__); \
     } while (false)
 using namespace std;
-using ll = long long;
+using i32 = int32_t;
+using i64 = int64_t;
+using u32 = uint32_t;
+using u64 = uint64_t;
 int main()
 {
     ios_base::sync_with_stdio(false);
