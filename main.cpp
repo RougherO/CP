@@ -596,6 +596,8 @@ namespace io {
         bool first { true };
         if constexpr (sizeof...(Seps) == 0) {
             ((first ? (first = false, os << args) : (os << ' ' << args)), ...);
+        } else if constexpr (sizeof...(Seps) == 1 && std::get<0>(std::make_tuple(Seps...)) == 0) {
+            (os << ... << args);
         } else {
             ((first ? (first = false, os << args) : (os << ... << Seps) << args), ...);
         }
