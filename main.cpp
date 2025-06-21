@@ -19,7 +19,6 @@ namespace v = std::views;
  */
 namespace speed {
 namespace ds {
-    template <long long = 1000000007>
     struct mint;
     struct dsu;
 }
@@ -46,9 +45,7 @@ namespace utils {
     template <typename T>
     constexpr bool is_iterator_v = is_iterator<T>::value;
     template <typename T>
-    struct is_integer : std::is_integral<T> { };
-    template <long long Mod>
-    struct is_integer<ds::mint<Mod>> : std::true_type { };
+    struct is_integer : std::disjunction<std::is_integral<T>, std::is_same<T, ds::mint>> { };
     template <typename T>
     constexpr bool is_integer_v = is_integer<T>::value;
 }
@@ -70,8 +67,7 @@ namespace math {
 namespace io {
     static int const pretty_index = std::ios_base::xalloc(); // For pretty printing
     using utils::is_tuple_like_v;
-    template <int Mod>
-    auto operator>>(std::istream&, ds::mint<Mod>&) -> std::istream&;
+    auto operator>>(std::istream&, ds::mint&) -> std::istream&;
     template <typename... Params>
     auto operator>>(std::istream&, std::vector<Params...>&) -> std::istream&;
     template <typename Type, typename = std::enable_if_t<is_tuple_like_v<Type>>>
@@ -105,8 +101,7 @@ namespace io {
     auto operator<<(std::ostream&, std::tuple<Ts...> const&) -> std::ostream&;
     template <typename T, typename U>
     auto operator<<(std::ostream&, std::pair<T, U> const&) -> std::ostream&;
-    template <long long Mod>
-    auto operator<<(std::ostream&, ds::mint<Mod> const&) -> std::ostream&;
+    auto operator<<(std::ostream&, ds::mint const&) -> std::ostream&;
     template <char... Seps, typename T, typename = std::enable_if_t<is_iterator_v<T>>>
     void put(std::ostream&, T, T);
     template <char... Seps, typename T, typename = std::enable_if_t<is_iterator_v<T>>>
@@ -156,32 +151,36 @@ namespace utils {
     constexpr bool is_printable_v = is_printable<T>::value;
 }
 namespace ds {
-    template <long long Mod>
     struct mint {
         constexpr mint() = default;
         constexpr mint(long long value)
-            : x { value % Mod }
+            : x { value % mod }
         {
         }
-        constexpr auto operator+(mint const& o) const noexcept -> mint { return (x + o.x) % Mod; }
-        constexpr auto operator-(mint const& o) const noexcept -> mint { return (x - o.x) % Mod + (x < o.x ? Mod : 0); }
-        constexpr auto operator*(mint const& o) const noexcept -> mint { return (x * o.x) % Mod; }
-        constexpr auto operator/(mint const& o) const noexcept -> mint { return mint { x } * math::binary_expo(o, Mod - 2); }
+        constexpr mint(long long value, long long modulus)
+            : mod { modulus }
+            , x { value % modulus }
+        {
+        }
+        constexpr auto operator+(mint const& o) const noexcept -> mint { return (x + o.x) % mod; }
+        constexpr auto operator-(mint const& o) const noexcept -> mint { return (x - o.x) % mod + (x < o.x ? mod : 0); }
+        constexpr auto operator*(mint const& o) const noexcept -> mint { return (x * o.x) % mod; }
+        constexpr auto operator/(mint const& o) const noexcept -> mint { return mint { x } * math::binary_expo(o, mod - 2); }
         constexpr auto operator%(mint const& o) const noexcept -> mint { return x % o.x; }
-        constexpr auto operator<<(mint const& o) const noexcept -> mint { return (x << o.x) % Mod; }
-        constexpr auto operator>>(mint const& o) const noexcept -> mint { return (x >> o.x) % Mod; }
+        constexpr auto operator<<(mint const& o) const noexcept -> mint { return (x << o.x) % mod; }
+        constexpr auto operator>>(mint const& o) const noexcept -> mint { return (x >> o.x) % mod; }
         constexpr auto operator|(mint const& o) const noexcept -> mint { return x | o.x; }
         constexpr auto operator&(mint const& o) const noexcept -> mint { return x & o.x; }
-        constexpr auto operator~() const noexcept -> mint { return ~x % Mod; }
+        constexpr auto operator~() const noexcept -> mint { return ~x % mod; }
         constexpr auto operator+=(mint const& o) noexcept -> mint& { return *this = *this + o; }
         constexpr auto operator-=(mint const& o) noexcept -> mint& { return *this = *this - o; }
         constexpr auto operator*=(mint const& o) noexcept -> mint& { return *this = *this * o; }
         constexpr auto operator/=(mint const& o) noexcept -> mint& { return *this = *this / o; }
-        constexpr auto operator%=(mint const& o) const noexcept -> mint& { return *this = *this % o; }
-        constexpr auto operator<<=(mint const& o) const noexcept -> mint { return *this = *this << o; }
-        constexpr auto operator>>=(mint const& o) const noexcept -> mint { return *this = *this >> o; }
-        constexpr auto operator|=(mint const& o) const noexcept -> mint { return x | o.x; }
-        constexpr auto operator&=(mint const& o) const noexcept -> mint { return x & o.x; }
+        constexpr auto operator%=(mint const& o) noexcept -> mint& { return *this = *this % o; }
+        constexpr auto operator<<=(mint const& o) noexcept -> mint { return *this = *this << o; }
+        constexpr auto operator>>=(mint const& o) noexcept -> mint { return *this = *this >> o; }
+        constexpr auto operator|=(mint const& o) noexcept -> mint { return *this = *this | o; }
+        constexpr auto operator&=(mint const& o) noexcept -> mint { return *this = *this & o; }
         constexpr auto operator++() noexcept -> mint& { return *this += 1; }
         constexpr auto operator++(int) noexcept -> mint
         {
@@ -197,10 +196,10 @@ namespace ds {
         constexpr auto operator>=(mint const& other) const noexcept -> bool { return !(*this < other); }
         constexpr auto operator!() const noexcept -> bool { return !x; }
         constexpr explicit operator int() const noexcept { return x; }
-        constexpr void X(long long value) noexcept { x = value % Mod; }
-        constexpr auto X() const noexcept -> long long { return x; }
+        constexpr auto value() const noexcept -> long long { return x; }
 
     private:
+        long long mod { 1000000007 };
         long long x {};
     };
     struct dsu {
@@ -346,12 +345,11 @@ namespace math {
     }
 }
 namespace io {
-    template <long long Mod>
-    auto operator>>(std::istream& is, ds::mint<Mod>& m) -> std::istream&
+    auto operator>>(std::istream& is, ds::mint& m) -> std::istream&
     {
         long long x {};
         is >> x;
-        m.X(x);
+        m = x;
         return is;
     }
     template <typename... Params>
@@ -549,8 +547,7 @@ namespace io {
         }
         return os;
     }
-    template <long long Mod>
-    auto operator<<(std::ostream& os, ds::mint<Mod> const& m) -> std::ostream& { return os << m.X(); }
+    auto operator<<(std::ostream& os, ds::mint const& m) -> std::ostream& { return os << m.value(); }
     template <typename... Ts>
     void scan(std::istream& is, Ts&... args)
     {
