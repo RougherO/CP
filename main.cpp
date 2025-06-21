@@ -22,7 +22,7 @@ namespace ds {
     struct mint;
     struct dsu;
 }
-namespace string {
+namespace str {
     template <typename Container = std::vector<std::string>>
     auto split(std::string const&, std::string_view = "") -> Container;
     auto strip(std::string const&) -> std::string;
@@ -250,7 +250,7 @@ namespace ds {
         std::vector<size_t> m_parent;
     };
 }
-namespace string {
+namespace str {
     template <typename Container>
     auto split(std::string const& line, std::string_view delim) -> Container
     {
@@ -378,7 +378,7 @@ namespace io {
         template <std::size_t... I, typename... Ts>
         void debug_impl(std::vector<std::string> const& names, std::index_sequence<I...>, Ts const&... args)
         {
-            using string::strip;
+            using str::strip;
             (putln("\t", strip(names[I]), ": ", args), ...);
         }
     }
@@ -591,7 +591,7 @@ namespace io {
     void debug(char const* name_str, Ts const&... args)
     {
         putln("{");
-        auto names = string::split(name_str, ",");
+        auto names = str::split(name_str, ",");
         std::cout << pretty;
         detail::debug_impl(names, std::make_index_sequence<sizeof...(args)> {}, args...);
         std::cout << pretty;
@@ -612,8 +612,8 @@ using math::ceil;
 using math::factorial;
 using math::floor;
 using math::is_prime;
-using string::split;
-using string::strip;
+using str::split;
+using str::strip;
 // for ADL lookup -- workaround for the compiler bug
 using io::operator<<;
 using io::operator>>;
