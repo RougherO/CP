@@ -23,9 +23,9 @@ namespace ds {
     struct dsu;
 }
 namespace str {
-    template <typename Container = std::vector<std::string>>
-    auto split(std::string const&, std::string_view = "") -> Container;
-    auto strip(std::string const&) -> std::string;
+    template <typename Container = std::vector<std::string_view>>
+    auto split(std::string_view, std::string_view = "") -> Container;
+    auto strip(std::string_view) -> std::string_view;
 }
 namespace utils {
     template <typename>
@@ -252,24 +252,37 @@ namespace ds {
 }
 namespace str {
     template <typename Container>
-    auto split(std::string const& line, std::string_view delim) -> Container
+    auto split(std::string_view line, std::string_view delim) -> Container
     {
         Container cont;
-        if (delim.size() == 0) {
-            std::stringstream ss { line };
-            std::move(std::istream_iterator<std::string> { ss }, std::istream_iterator<std::string> {}, std::back_inserter(cont));
-            return cont;
-        }
         size_t s = 0;
         size_t e = 0;
-        while ((e = line.find(delim, s)) != std::string::npos) {
-            cont.insert(std::end(cont), line.substr(s, e - s));
-            s = e + delim.size();
+        if (delim.size() == 0) {
+            size_t size = line.size();
+            while (e < size) {
+                s = e;
+                while (s < size && std::isspace(line[s])) {
+                    s++;
+                }
+                if (s == size) {
+                    break;
+                }
+                e = s;
+                while (e < size && !std::isspace(line[e])) {
+                    e++;
+                }
+                cont.insert(std::end(cont), line.substr(s, e - s));
+            }
+        } else {
+            while ((e = line.find(delim, s)) != std::string::npos) {
+                cont.insert(std::end(cont), line.substr(s, e - s));
+                s = e + delim.size();
+            }
+            cont.insert(std::end(cont), line.substr(s));
         }
-        cont.insert(std::end(cont), line.substr(s));
         return cont;
     }
-    auto strip(std::string const& word) -> std::string
+    auto strip(std::string_view word) -> std::string_view
     {
         size_t l = word.find_first_not_of(' ');
         size_t r = word.find_last_not_of(' ');
@@ -376,7 +389,7 @@ namespace io {
                        tuple);
         }
         template <std::size_t... I, typename... Ts>
-        void debug_impl(std::vector<std::string> const& names, std::index_sequence<I...>, Ts const&... args)
+        void debug_impl(std::vector<std::string_view> const& names, std::index_sequence<I...>, Ts const&... args)
         {
             using str::strip;
             (putln("\t", strip(names[I]), ": ", args), ...);
