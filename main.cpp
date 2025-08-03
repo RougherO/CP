@@ -23,8 +23,7 @@ namespace ds {
     struct dsu;
 }
 namespace str {
-    template <typename Container = std::vector<std::string_view>>
-    auto split(std::string_view, std::string_view = "") -> Container;
+    auto split(std::string_view, std::string_view = "") -> std::vector<std::string_view>;
     auto strip(std::string_view) -> std::string_view;
 }
 namespace utils {
@@ -52,17 +51,23 @@ namespace utils {
 namespace math {
     using utils::is_integer_v;
     template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
-    constexpr auto binary_expo(T, unsigned long long) noexcept -> T;
+    constexpr auto binary_expo(T, unsigned long long) -> T;
     template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
     constexpr auto binomial_coeff(T, T) -> T;
     template <typename T, typename = std::enable_if_t<is_integer_v<T>>> // use tgamma for floating points
-    constexpr auto factorial(T) -> T;
+    constexpr auto factorial(T) noexcept -> T;
     template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
     constexpr auto is_prime(T) -> bool;
     template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
     constexpr auto floor(T, T) -> T;
     template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
     constexpr auto ceil(T, T) -> T;
+    template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
+    auto divisors(T) -> std::vector<T>;
+    template <typename T>
+    constexpr auto nmax() { return std::numeric_limits<T>::max(); }
+    template <typename T>
+    constexpr auto nmin() { return std::numeric_limits<T>::min(); }
 }
 namespace io {
     static int const pretty_index = std::ios_base::xalloc(); // For pretty printing
@@ -251,10 +256,9 @@ namespace ds {
     };
 }
 namespace str {
-    template <typename Container>
-    auto split(std::string_view line, std::string_view delim) -> Container
+    auto split(std::string_view line, std::string_view delim) -> std::vector<std::string_view>
     {
-        Container cont;
+        std::vector<std::string_view> cont;
         size_t s = 0;
         size_t e = 0;
         if (delim.size() == 0) {
@@ -271,14 +275,14 @@ namespace str {
                 while (e < size && !std::isspace(line[e])) {
                     e++;
                 }
-                cont.insert(std::end(cont), line.substr(s, e - s));
+                cont.emplace_back(line.substr(s, e - s));
             }
         } else {
             while ((e = line.find(delim, s)) != std::string::npos) {
-                cont.insert(std::end(cont), line.substr(s, e - s));
+                cont.emplace_back(line.substr(s, e - s));
                 s = e + delim.size();
             }
-            cont.insert(std::end(cont), line.substr(s));
+            cont.emplace_back(line.substr(s));
         }
         return cont;
     }
@@ -291,7 +295,7 @@ namespace str {
 }
 namespace math {
     template <typename T, typename>
-    constexpr auto binary_expo(T base, unsigned long long pow) noexcept -> T
+    constexpr auto binary_expo(T base, unsigned long long pow) -> T
     {
         T result { 1 };
         while (pow != 0) {
@@ -317,7 +321,7 @@ namespace math {
         return prod;
     }
     template <typename T, typename>
-    constexpr auto factorial(T n) -> T
+    constexpr auto factorial(T n) noexcept -> T
     {
         T prod { 1 };
         for (T i = 2; i <= n; i++) {
@@ -355,6 +359,19 @@ namespace math {
     constexpr auto ceil(T x, T y) -> T
     {
         return (x + y - 1) / y;
+    }
+    template <typename T, typename>
+    auto divisors(T n) -> std::vector<T>
+    {
+        T x { 1 };
+        std::vector<T> divs;
+        while (x * x <= n) {
+            if (n % x == 0) {
+                divs.insert(divs.end(), { x, n / x });
+            }
+            x++;
+        }
+        return divs;
     }
 }
 namespace io {
@@ -624,9 +641,12 @@ using io::scanln;
 using math::binary_expo;
 using math::binomial_coeff;
 using math::ceil;
+using math::divisors;
 using math::factorial;
 using math::floor;
 using math::is_prime;
+using math::nmax;
+using math::nmin;
 using str::split;
 using str::strip;
 // for ADL lookup -- workaround for the compiler bug

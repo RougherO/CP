@@ -9,8 +9,5 @@
         "--compile-commands-dir=build",
         "--header-insertion=never"
     ],
-    "clang-tidy.compilerArgs": [
-        "-std=c++23"
-    ],
     "clang-tidy.buildPath": "build",
 }
