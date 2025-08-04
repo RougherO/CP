@@ -409,7 +409,7 @@ namespace io {
         void debug_impl(std::vector<std::string_view> const& names, std::index_sequence<I...>, Ts const&... args)
         {
             using str::strip;
-            (putln("\t", strip(names[I]), ": ", args), ...);
+            (putln(std::cerr, "\t", strip(names[I]), ": ", args), ...);
         }
     }
     auto operator<<(std::ostream& os, std::string_view strv) -> std::ostream&
@@ -622,12 +622,12 @@ namespace io {
     template <typename... Ts>
     void debug(char const* name_str, Ts const&... args)
     {
-        putln("{");
+        putln(std::cerr, "{");
         auto names = str::split(name_str, ",");
         std::cout << pretty;
         detail::debug_impl(names, std::make_index_sequence<sizeof...(args)> {}, args...);
         std::cout << pretty;
-        putln("}");
+        putln(std::cerr, "}");
     }
 }
 }
