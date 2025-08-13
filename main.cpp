@@ -48,6 +48,12 @@ namespace utils {
     template <typename T>
     constexpr bool is_integer_v = is_integer<T>::value;
 }
+namespace algo {
+    // Does a conditional binary search with a conditional
+    // function over an integer range or iterator range
+    template <typename T, typename Cond>
+    auto cond_binary_search(T, T, Cond&&) -> T;
+}
 namespace math {
     using utils::is_integer_v;
     template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
@@ -62,6 +68,10 @@ namespace math {
     constexpr auto floor(T, T) -> T;
     template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
     constexpr auto ceil(T, T) -> T;
+    template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
+    constexpr auto sqr(T) -> T;
+    template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
+    constexpr auto isqrt(T) -> T;
     template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
     auto divisors(T) -> std::vector<T>;
     template <typename T>
@@ -293,6 +303,54 @@ namespace str {
         return word.substr(l, r - l + 1);
     }
 }
+namespace algo {
+    namespace detail {
+        template <typename T, typename Cond>
+        auto cond_binary_search_integer_range(T begin, T end, Cond&& cond) -> T
+        {
+            while (begin != end) {
+                T mid = std::midpoint(begin, end);
+                if (cond(mid)) {
+                    begin = mid + 1;
+                } else {
+                    end = mid;
+                }
+            }
+            // T T T T T F F F F F F F
+            //           ^------- position of `begin`
+            // `begin` at position where cond always
+            // returns false
+            return begin;
+        }
+        template <typename T, typename Cond>
+        auto cond_binary_search_iterator_range(T begin, T end, Cond&& cond) -> T
+        {
+            auto step = std::distance(begin, end) / 2;
+            while (begin != end) {
+                T mid = std::next(begin, step);
+                if (cond(*mid)) {
+                    begin = std::next(mid);
+                } else {
+                    end = mid;
+                }
+                step /= 2;
+            }
+            return begin;
+        }
+    }
+    template <typename T, typename Cond>
+    auto cond_binary_search(T begin, T end, Cond&& cond) -> T
+    {
+        static_assert(std::is_invocable_r_v<T, Cond, T>, "Wrong function signature type");
+        if constexpr (utils::is_integer_v<T>) {
+            return detail::cond_binary_search_integer_range(begin, end, std::forward<Cond>(cond));
+        } else if constexpr (utils::is_iterator_v<T>) {
+            return detail::cond_binary_search_iterator_range(begin, end, std::forward<Cond>(cond));
+        } else {
+            static_assert(false, "Conditional binary search supported only with integer or iterator ranges");
+        }
+    }
+}
 namespace math {
     template <typename T, typename>
     constexpr auto binary_expo(T base, unsigned long long pow) -> T
@@ -351,14 +409,29 @@ namespace math {
         return true;
     }
     template <typename T, typename>
-    constexpr auto floor(T x, T y) -> T
-    {
-        return x / y;
-    }
+    constexpr auto floor(T x, T y) -> T { return x / y; }
     template <typename T, typename>
-    constexpr auto ceil(T x, T y) -> T
+    constexpr auto ceil(T x, T y) -> T { return (x + y - 1) / y; }
+    template <typename T, typename>
+    constexpr auto sqr(T x) -> T { return x * x; }
+    template <typename T, typename>
+    constexpr auto isqrt(T x) -> T
     {
-        return (x + y - 1) / y;
+        if (!x) {
+            return 0;
+        }
+        T mi = T { 1 };
+        T ma = nmax<T>();
+        while (mi < ma) {
+            T mid = std::midpoint(mi, ma);
+            if (mid <= x / mid) {
+                mi = mid + 1;
+            } else {
+                ma = mid;
+            }
+        }
+        // mi > x (can be proved)
+        return mi--;
     }
     template <typename T, typename>
     auto divisors(T n) -> std::vector<T>
@@ -632,6 +705,7 @@ namespace io {
 }
 }
 using namespace speed;
+using algo::cond_binary_search;
 using ds::dsu;
 using ds::mint;
 using io::put;
@@ -645,8 +719,10 @@ using math::divisors;
 using math::factorial;
 using math::floor;
 using math::is_prime;
+using math::isqrt;
 using math::nmax;
 using math::nmin;
+using math::sqr;
 using str::split;
 using str::strip;
 // for ADL lookup -- workaround for the compiler bug
