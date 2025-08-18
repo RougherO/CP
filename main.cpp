@@ -18,6 +18,18 @@ namespace v = std::views;
  * Thanks
  */
 namespace speed {
+using i32   = int32_t;
+using i64   = int64_t;
+using u32   = uint32_t;
+using u64   = uint64_t;
+using isize = std::ptrdiff_t;
+using usize = std::size_t;
+auto operator""_i32(unsigned long long x) -> i32 { return x; }
+auto operator""_i64(unsigned long long x) -> i64 { return x; }
+auto operator""_u32(unsigned long long x) -> u32 { return x; }
+auto operator""_u64(unsigned long long x) -> u64 { return x; }
+auto operator""_isize(unsigned long long x) -> isize { return x; }
+auto operator""_usize(unsigned long long x) -> usize { return x; }
 namespace ds {
     struct mint;
     struct dsu;
@@ -168,11 +180,11 @@ namespace utils {
 namespace ds {
     struct mint {
         constexpr mint() = default;
-        constexpr mint(long long value)
+        constexpr mint(i64 value)
             : x { value % mod }
         {
         }
-        constexpr mint(long long value, long long modulus)
+        constexpr mint(i64 value, i64 modulus)
             : mod { modulus }
             , x { value % modulus }
         {
@@ -211,30 +223,30 @@ namespace ds {
         constexpr auto operator>=(mint const& other) const noexcept -> bool { return !(*this < other); }
         constexpr auto operator!() const noexcept -> bool { return !x; }
         constexpr explicit operator int() const noexcept { return x; }
-        constexpr auto value() const noexcept -> long long { return x; }
+        constexpr auto value() const noexcept -> i64 { return x; }
 
     private:
-        long long mod { 1000000007 };
-        long long x {};
+        i64 mod { 1000000007 };
+        i64 x {};
     };
     struct dsu {
-        dsu(size_t n)
+        dsu(usize n)
             : m_rank(n)
             , m_parent(n)
         {
             std::iota(m_parent.begin(), m_parent.end(), 0);
         }
-        auto parent(size_t node) noexcept -> size_t
+        auto parent(usize node) noexcept -> usize
         {
             if (m_parent[node] == node) {
                 return node;
             }
             return m_parent[node] = parent(m_parent[node]);
         }
-        auto unite(size_t node1, size_t node2) noexcept -> bool
+        auto unite(usize node1, usize node2) noexcept -> bool
         {
-            size_t p1 = parent(node1);
-            size_t p2 = parent(node2);
+            usize p1 = parent(node1);
+            usize p2 = parent(node2);
             if (p1 == p2) {
                 return false;
             }
@@ -248,11 +260,11 @@ namespace ds {
             }
             return true;
         }
-        auto count() const noexcept -> size_t
+        auto count() const noexcept -> usize
         {
-            size_t n = m_parent.size();
-            size_t cnt {};
-            for (size_t i = 0; i != n; ++i) {
+            usize n = m_parent.size();
+            usize cnt {};
+            for (usize i = 0; i != n; ++i) {
                 if (i == m_parent[i]) {
                     cnt++;
                 }
@@ -261,18 +273,19 @@ namespace ds {
         }
 
     private:
-        std::vector<size_t> m_rank;
-        std::vector<size_t> m_parent;
+        std::vector<usize> m_rank;
+        std::vector<usize> m_parent;
     };
 }
+auto operator""_mi(unsigned long long x) -> ds::mint { return x; }
 namespace str {
     auto split(std::string_view line, std::string_view delim) -> std::vector<std::string_view>
     {
         std::vector<std::string_view> cont;
-        size_t s = 0;
-        size_t e = 0;
+        usize s = 0;
+        usize e = 0;
         if (delim.size() == 0) {
-            size_t size = line.size();
+            usize size = line.size();
             while (e < size) {
                 s = e;
                 while (s < size && std::isspace(line[s])) {
@@ -298,8 +311,8 @@ namespace str {
     }
     auto strip(std::string_view word) -> std::string_view
     {
-        size_t l = word.find_first_not_of(' ');
-        size_t r = word.find_last_not_of(' ');
+        usize l = word.find_first_not_of(' ');
+        usize r = word.find_last_not_of(' ');
         return word.substr(l, r - l + 1);
     }
 }
@@ -417,8 +430,8 @@ namespace math {
     template <typename T, typename>
     constexpr auto isqrt(T x) -> T
     {
-        if (!x) {
-            return 0;
+        if (x < 2) {
+            return x;
         }
         T mi = T { 1 };
         T ma = nmax<T>();
@@ -438,7 +451,7 @@ namespace math {
     {
         T x { 1 };
         std::vector<T> divs;
-        while (x * x <= n) {
+        while (x <= n / x) {
             if (n % x == 0) {
                 divs.insert(divs.end(), { x, n / x });
             }
@@ -473,12 +486,12 @@ namespace io {
         void print_tuple_like(std::ostream& os, Type const& tuple)
         {
             std::apply([&os](auto const&... args) {
-                size_t n {};
+                usize n {};
                 ((os << (n++ != 0 ? (os.iword(pretty_index) ? ", " : " ") : "") << args), ...);
             },
                        tuple);
         }
-        template <std::size_t... I, typename... Ts>
+        template <usize... I, typename... Ts>
         void debug_impl(std::vector<std::string_view> const& names, std::index_sequence<I...>, Ts const&... args)
         {
             using str::strip;
@@ -614,7 +627,7 @@ namespace io {
         }
         return os;
     }
-    template <typename T, std::size_t N>
+    template <typename T, usize N>
     auto operator<<(std::ostream& os, std::array<T, N> const& array) -> std::ostream&
     {
         if (os.iword(pretty_index)) {
@@ -733,10 +746,6 @@ using io::operator>>;
         io::debug(#__VA_ARGS__, __VA_ARGS__); \
     } while (false)
 using namespace std;
-using i32 = int32_t;
-using i64 = int64_t;
-using u32 = uint32_t;
-using u64 = uint64_t;
 int main()
 {
     ios_base::sync_with_stdio(false);
