@@ -28,9 +28,10 @@ auto operator""_i32(unsigned long long x) -> i32 { return x; }
 auto operator""_i64(unsigned long long x) -> i64 { return x; }
 auto operator""_u32(unsigned long long x) -> u32 { return x; }
 auto operator""_u64(unsigned long long x) -> u64 { return x; }
-auto operator""_isize(unsigned long long x) -> isize { return x; }
-auto operator""_usize(unsigned long long x) -> usize { return x; }
+auto operator""_iz(unsigned long long x) -> isize { return x; }
+auto operator""_uz(unsigned long long x) -> usize { return x; }
 namespace ds {
+    template <i64 Mod = 1'000'000'007>
     struct mint;
     struct dsu;
 }
@@ -56,7 +57,9 @@ namespace utils {
     template <typename T>
     constexpr bool is_iterator_v = is_iterator<T>::value;
     template <typename T>
-    struct is_integer : std::disjunction<std::is_integral<T>, std::is_same<T, ds::mint>> { };
+    struct is_integer : std::is_integral<T> { };
+    template <i64 Mod>
+    struct is_integer<ds::mint<Mod>> : std::true_type { };
     template <typename T>
     constexpr bool is_integer_v = is_integer<T>::value;
 }
@@ -85,16 +88,25 @@ namespace math {
     template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
     constexpr auto isqrt(T) -> T;
     template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
+    constexpr auto lclamp(T, T) -> T;
+    template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
+    constexpr auto uclamp(T, T) -> T;
+    template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
+    constexpr auto is_odd(T) -> bool;
+    template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
+    constexpr auto is_even(T) -> bool;
+    template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
     auto divisors(T) -> std::vector<T>;
     template <typename T>
-    constexpr auto nmax() { return std::numeric_limits<T>::max(); }
+    constexpr auto nmax() -> T;
     template <typename T>
-    constexpr auto nmin() { return std::numeric_limits<T>::min(); }
+    constexpr auto nmin() -> T;
 }
 namespace io {
     static int const pretty_index = std::ios_base::xalloc(); // For pretty printing
     using utils::is_tuple_like_v;
-    auto operator>>(std::istream&, ds::mint&) -> std::istream&;
+    template <i64 Mod>
+    auto operator>>(std::istream&, ds::mint<Mod>&) -> std::istream&;
     template <typename... Params>
     auto operator>>(std::istream&, std::vector<Params...>&) -> std::istream&;
     template <typename Type, typename = std::enable_if_t<is_tuple_like_v<Type>>>
@@ -128,7 +140,8 @@ namespace io {
     auto operator<<(std::ostream&, std::tuple<Ts...> const&) -> std::ostream&;
     template <typename T, typename U>
     auto operator<<(std::ostream&, std::pair<T, U> const&) -> std::ostream&;
-    auto operator<<(std::ostream&, ds::mint const&) -> std::ostream&;
+    template <i64 Mod>
+    auto operator<<(std::ostream&, ds::mint<Mod> const&) -> std::ostream&;
     template <char... Seps, typename T, typename = std::enable_if_t<is_iterator_v<T>>>
     void put(std::ostream&, T, T);
     template <char... Seps, typename T, typename = std::enable_if_t<is_iterator_v<T>>>
@@ -178,27 +191,23 @@ namespace utils {
     constexpr bool is_printable_v = is_printable<T>::value;
 }
 namespace ds {
+    template <i64 Mod>
     struct mint {
         constexpr mint() = default;
         constexpr mint(i64 value)
-            : x { value % mod }
+            : x { value % Mod }
         {
         }
-        constexpr mint(i64 value, i64 modulus)
-            : mod { modulus }
-            , x { value % modulus }
-        {
-        }
-        constexpr auto operator+(mint const& o) const noexcept -> mint { return (x + o.x) % mod; }
-        constexpr auto operator-(mint const& o) const noexcept -> mint { return (x - o.x) % mod + (x < o.x ? mod : 0); }
-        constexpr auto operator*(mint const& o) const noexcept -> mint { return (x * o.x) % mod; }
-        constexpr auto operator/(mint const& o) const noexcept -> mint { return mint { x } * math::binary_expo(o, mod - 2); }
-        constexpr auto operator%(mint const& o) const noexcept -> mint { return x % o.x; }
-        constexpr auto operator<<(mint const& o) const noexcept -> mint { return (x << o.x) % mod; }
-        constexpr auto operator>>(mint const& o) const noexcept -> mint { return (x >> o.x) % mod; }
-        constexpr auto operator|(mint const& o) const noexcept -> mint { return x | o.x; }
-        constexpr auto operator&(mint const& o) const noexcept -> mint { return x & o.x; }
-        constexpr auto operator~() const noexcept -> mint { return ~x % mod; }
+        friend constexpr auto operator+(mint const& l, mint const& r) noexcept -> mint { return (l.x + r.x) % Mod; }
+        friend constexpr auto operator-(mint const& l, mint const& r) noexcept -> mint { return (l.x - r.x) % Mod + (l.x < r.x ? Mod : 0); }
+        friend constexpr auto operator*(mint const& l, mint const& r) noexcept -> mint { return (l.x * r.x) % Mod; }
+        friend constexpr auto operator/(mint const& l, mint const& r) noexcept -> mint { return l.x * math::binary_expo(r, Mod - 2); }
+        friend constexpr auto operator%(mint const& l, mint const& r) noexcept -> mint { return l.x % r.x; }
+        friend constexpr auto operator<<(mint const& l, mint const& r) noexcept -> mint { return (l.x << r.x) % Mod; }
+        friend constexpr auto operator>>(mint const& l, mint const& r) noexcept -> mint { return (l.x >> r.x) % Mod; }
+        friend constexpr auto operator|(mint const& l, mint const& r) noexcept -> mint { return l.x | r.x; }
+        friend constexpr auto operator&(mint const& l, mint const& r) noexcept -> mint { return l.x & r.x; }
+        constexpr auto operator~() const noexcept -> mint { return ~x % Mod; }
         constexpr auto operator+=(mint const& o) noexcept -> mint& { return *this = *this + o; }
         constexpr auto operator-=(mint const& o) noexcept -> mint& { return *this = *this - o; }
         constexpr auto operator*=(mint const& o) noexcept -> mint& { return *this = *this * o; }
@@ -226,7 +235,6 @@ namespace ds {
         constexpr auto value() const noexcept -> i64 { return x; }
 
     private:
-        i64 mod { 1000000007 };
         i64 x {};
     };
     struct dsu {
@@ -277,7 +285,6 @@ namespace ds {
         std::vector<usize> m_parent;
     };
 }
-auto operator""_mi(unsigned long long x) -> ds::mint { return x; }
 namespace str {
     auto split(std::string_view line, std::string_view delim) -> std::vector<std::string_view>
     {
@@ -447,21 +454,37 @@ namespace math {
         return mi--;
     }
     template <typename T, typename>
-    auto divisors(T n) -> std::vector<T>
+    constexpr auto lclamp(T x, T l) -> T { return std::clamp(x, l, nmax<T>()); }
+    template <typename T, typename>
+    constexpr auto uclamp(T x, T u) -> T { return std::clamp(x, nmin<T>(), u); }
+    template <typename T, typename>
+    constexpr auto is_odd(T x) -> bool { return x % 2 == 1; }
+    template <typename T, typename>
+    constexpr auto is_even(T x) -> bool { return x % 2 == 0; }
+    template <typename T, typename>
+    auto divisors(T x) -> std::vector<T>
     {
-        T x { 1 };
-        std::vector<T> divs;
-        while (x <= n / x) {
-            if (n % x == 0) {
-                divs.insert(divs.end(), { x, n / x });
+        T n { 1 };
+        std::vector<T> divs_first;
+        std::vector<T> divs_second;
+        while (n <= x / n) {
+            if (x % n == 0) {
+                divs_first.push_back(n);
+                divs_second.push_back(x / n);
             }
-            x++;
+            n++;
         }
-        return divs;
+        divs_first.insert(divs_first.end(), divs_second.rbegin(), divs_second.rend());
+        return divs_first;
     }
+    template <typename T>
+    constexpr auto nmax() -> T { return std::numeric_limits<T>::max(); }
+    template <typename T>
+    constexpr auto nmin() -> T { return std::is_floating_point_v<T> ? std::numeric_limits<T>::lowest() : std::numeric_limits<T>::min(); }
 }
 namespace io {
-    auto operator>>(std::istream& is, ds::mint& m) -> std::istream&
+    template <i64 Mod>
+    auto operator>>(std::istream& is, ds::mint<Mod>& m) -> std::istream&
     {
         long long x {};
         is >> x;
@@ -663,7 +686,8 @@ namespace io {
         }
         return os;
     }
-    auto operator<<(std::ostream& os, ds::mint const& m) -> std::ostream& { return os << m.value(); }
+    template <i64 Mod>
+    auto operator<<(std::ostream& os, ds::mint<Mod> const& m) -> std::ostream& { return os << m.value(); }
     template <typename... Ts>
     void scan(std::istream& is, Ts&... args)
     {
@@ -731,11 +755,15 @@ using math::ceil;
 using math::divisors;
 using math::factorial;
 using math::floor;
+using math::is_even;
+using math::is_odd;
 using math::is_prime;
 using math::isqrt;
+using math::lclamp;
 using math::nmax;
 using math::nmin;
 using math::sqr;
+using math::uclamp;
 using str::split;
 using str::strip;
 // for ADL lookup -- workaround for the compiler bug
