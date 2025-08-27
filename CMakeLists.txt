@@ -22,6 +22,7 @@ target_compile_options(
 
 target_link_options(
     ${TARGET} PRIVATE 
+    -fsanitize=undefined
     -fsanitize=address
     -fsanitize=bounds
 )
