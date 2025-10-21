@@ -328,13 +328,15 @@ namespace algo {
         template <typename T, typename Cond>
         auto cond_binary_search_integer_range(T begin, T end, Cond&& cond) -> T
         {
+            auto step = (end - begin) / 2;
             while (begin != end) {
-                T mid = std::midpoint(begin, end);
+                T mid = begin + step;
                 if (cond(mid)) {
                     begin = mid + 1;
                 } else {
                     end = mid;
                 }
+                step /= 2;
             }
             // T T T T T F F F F F F F
             //           ^------- position of `begin`
