@@ -118,10 +118,6 @@ namespace math {
     template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
     constexpr auto uclamp(T, T) -> T;
     template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
-    constexpr auto is_odd(T) -> bool;
-    template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
-    constexpr auto is_even(T) -> bool;
-    template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
     auto divisors(T) -> std::vector<T>;
     template <typename T>
     constexpr auto nmax = std::numeric_limits<T>::max();
@@ -397,10 +393,6 @@ namespace math {
     constexpr auto lclamp(T x, T l) -> T { return std::clamp(x, l, nmax<T>()); }
     template <typename T, typename>
     constexpr auto uclamp(T x, T u) -> T { return std::clamp(x, nmin<T>(), u); }
-    template <typename T, typename>
-    constexpr auto is_odd(T x) -> bool { return x % 2 == 1; }
-    template <typename T, typename>
-    constexpr auto is_even(T x) -> bool { return x % 2 == 0; }
     template <typename T, typename>
     auto divisors(T x) -> std::vector<T>
     {
@@ -798,8 +790,6 @@ using math::ceil;
 using math::divisors;
 using math::factorial;
 using math::floor;
-using math::is_even;
-using math::is_odd;
 using math::is_prime;
 using math::isqrt;
 using math::lclamp;
