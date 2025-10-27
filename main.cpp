@@ -39,6 +39,14 @@ namespace str {
     auto split(std::string_view, std::string_view = "") -> std::vector<std::string_view>;
     auto strip(std::string_view) -> std::string_view;
 }
+namespace io {
+    template <typename T, typename = void>
+    struct serializer;
+    template <usize Capacity>
+    struct input_buffer;
+    template <usize Capacity>
+    struct output_buffer;
+}
 namespace utils {
     template <typename>
     struct is_tuple_like : std::false_type { };
@@ -51,17 +59,35 @@ namespace utils {
     template <typename T>
     constexpr bool is_tuple_like_v = is_tuple_like<T>::value;
     template <typename T, typename = void>
-    struct is_iterator : std::false_type { };
+    struct is_iterator_like : std::false_type { };
     template <typename T>
-    struct is_iterator<T, std::void_t<typename std::iterator_traits<T>::iterator_category>> : std::true_type { };
+    struct is_iterator_like<T, std::void_t<decltype(*std::declval<T>()),
+                                           decltype(++std::declval<T>()),
+                                           decltype(std::declval<T>()++)>> : std::true_type { };
     template <typename T>
-    constexpr bool is_iterator_v = is_iterator<T>::value;
+    constexpr bool is_iterator_like_v = is_iterator_like<T>::value;
     template <typename T>
     struct is_integer : std::is_integral<T> { };
     template <i64 Mod>
     struct is_integer<ds::mint<Mod>> : std::true_type { };
     template <typename T>
     constexpr bool is_integer_v = is_integer<T>::value;
+    template <typename T, typename = void>
+    struct is_scannable : std::false_type { };
+    template <typename T>
+    struct is_scannable<T, std::void_t<decltype(io::serializer<T>::read(
+                               std::declval<io::input_buffer<0>&>(),
+                               std::declval<T&>()))>> : std::true_type { };
+    template <typename T>
+    bool constexpr is_scannable_v = is_scannable<T>::value;
+    template <typename T, typename = void>
+    struct is_printable : std::false_type { };
+    template <typename T>
+    struct is_printable<T, std::void_t<decltype(io::serializer<T>::write(
+                               std::declval<io::output_buffer<0>&>(),
+                               std::declval<T const&>()))>> : std::true_type { };
+    template <typename T>
+    bool constexpr is_printable_v = is_printable<T>::value;
 }
 namespace algo {
     // Does a conditional binary search with a conditional
@@ -98,97 +124,9 @@ namespace math {
     template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
     auto divisors(T) -> std::vector<T>;
     template <typename T>
-    constexpr auto nmax() -> T;
+    constexpr auto nmax = std::numeric_limits<T>::max();
     template <typename T>
-    constexpr auto nmin() -> T;
-}
-namespace io {
-    static int const pretty_index = std::ios_base::xalloc(); // For pretty printing
-    using utils::is_tuple_like_v;
-    template <i64 Mod>
-    auto operator>>(std::istream&, ds::mint<Mod>&) -> std::istream&;
-    template <typename... Params>
-    auto operator>>(std::istream&, std::vector<Params...>&) -> std::istream&;
-    template <typename Type, typename = std::enable_if_t<is_tuple_like_v<Type>>>
-    auto operator>>(std::istream&, Type&) -> std::istream&;
-    template <typename... Ts>
-    void scan(std::istream&, Ts&...);
-    template <typename... Ts>
-    void scan(Ts&... args) { scan(std::cin, args...); }
-    void scanln(std::istream&, std::string&);
-    void scanln(std::string& line) { scanln(std::cin, line); }
-    using utils::is_iterator_v;
-    template <typename T, std::enable_if_t<is_iterator_v<T>>>
-    auto operator<<(std::ostream&, std::pair<T, T>) -> std::ostream&;
-    auto operator<<(std::ostream&, std::string_view) -> std::ostream&;
-    auto operator<<(std::ostream&, std::string const&) -> std::ostream&;
-    template <typename Type, typename = std::enable_if_t<is_tuple_like_v<Type>>>
-    auto operator<<(std::ostream&, Type& tuple) -> std::ostream&;
-    template <typename... Params>
-    auto operator<<(std::ostream&, std::vector<Params...> const&) -> std::ostream&;
-    template <typename... Params>
-    auto operator<<(std::ostream&, std::set<Params...> const&) -> std::ostream&;
-    template <typename... Params>
-    auto operator<<(std::ostream&, std::unordered_set<Params...> const&) -> std::ostream&;
-    template <typename... Params>
-    auto operator<<(std::ostream&, std::map<Params...> const&) -> std::ostream&;
-    template <typename... Params>
-    auto operator<<(std::ostream&, std::unordered_map<Params...> const&) -> std::ostream&;
-    template <typename T, std::size_t N>
-    auto operator<<(std::ostream&, std::array<T, N> const&) -> std::ostream&;
-    template <typename... Ts>
-    auto operator<<(std::ostream&, std::tuple<Ts...> const&) -> std::ostream&;
-    template <typename T, typename U>
-    auto operator<<(std::ostream&, std::pair<T, U> const&) -> std::ostream&;
-    template <i64 Mod>
-    auto operator<<(std::ostream&, ds::mint<Mod> const&) -> std::ostream&;
-    template <char... Seps, typename T, typename = std::enable_if_t<is_iterator_v<T>>>
-    void put(std::ostream&, T, T);
-    template <char... Seps, typename T, typename = std::enable_if_t<is_iterator_v<T>>>
-    void put(T first, T last) { put<Seps...>(std::cout, first, last); }
-    template <char... Seps, typename... Ts>
-    void put(std::ostream& os, Ts const&... args);
-    template <char... Seps, typename... Ts>
-    void put(Ts const&... args) { put<Seps...>(std::cout, args...); }
-    template <char... Seps, typename T, typename = std::enable_if_t<is_iterator_v<T>>>
-    void putln(std::ostream& os, T first, T last)
-    {
-        put<Seps...>(os, first, last);
-        os << "\n";
-    }
-    template <char... Seps, typename T, typename = std::enable_if_t<is_iterator_v<T>>>
-    void putln(T first, T last) { putln<Seps...>(std::cout, first, last); }
-    template <char... Seps, typename... Ts>
-    void putln(std::ostream& os, Ts const&... args)
-    {
-        put<Seps...>(os, args...);
-        os << "\n";
-    }
-    template <char... Seps, typename... Ts>
-    void putln(Ts const&... args) { putln<Seps...>(std::cout, args...); }
-    auto pretty(std::ostream& os) -> std::ostream&
-    {
-        os.iword(pretty_index) = !os.iword(pretty_index); // set pretty printing to
-        return os;
-    }
-    template <typename... Ts>
-    void debug(char const* name_str, Ts const&... args);
-}
-namespace utils {
-    using io::operator<<;
-    using io::operator>>;
-    template <typename, typename = void>
-    struct is_scannable : std::false_type { };
-    template <typename T>
-    struct is_scannable<T, std::void_t<decltype(std::declval<std::istream&>() >> std::declval<std::decay_t<T>&>())>> : std::true_type { };
-    template <typename T>
-    constexpr bool is_scannable_v = is_scannable<T>::value;
-    template <typename, typename = void>
-    struct is_printable : std::false_type { };
-    template <typename T>
-    struct is_printable<T, std::void_t<decltype(std::declval<std::ostream&>() << std::declval<std::decay_t<T>&>())>> : std::true_type { };
-    template <typename T>
-    constexpr bool is_printable_v = is_printable<T>::value;
+    constexpr auto nmin = std::is_floating_point_v<T> ? std::numeric_limits<T>::lowest() : std::numeric_limits<T>::min();
 }
 namespace ds {
     template <i64 Mod>
@@ -366,7 +304,7 @@ namespace algo {
         static_assert(std::is_invocable_r_v<T, Cond, T>, "Wrong function signature type");
         if constexpr (utils::is_integer_v<T>) {
             return detail::cond_binary_search_integer_range(begin, end, std::forward<Cond>(cond));
-        } else if constexpr (utils::is_iterator_v<T>) {
+        } else if constexpr (utils::is_iterator_like_v<T>) {
             return detail::cond_binary_search_iterator_range(begin, end, std::forward<Cond>(cond));
         } else {
             static_assert(false, "Conditional binary search supported only with integer or iterator ranges");
@@ -479,278 +417,381 @@ namespace math {
         divs_first.insert(divs_first.end(), divs_second.rbegin(), divs_second.rend());
         return divs_first;
     }
-    template <typename T>
-    constexpr auto nmax() -> T { return std::numeric_limits<T>::max(); }
-    template <typename T>
-    constexpr auto nmin() -> T { return std::is_floating_point_v<T> ? std::numeric_limits<T>::lowest() : std::numeric_limits<T>::min(); }
 }
 namespace io {
-    template <i64 Mod>
-    auto operator>>(std::istream& is, ds::mint<Mod>& m) -> std::istream&
-    {
-        long long x {};
-        is >> x;
-        m = x;
-        return is;
-    }
-    template <typename... Params>
-    auto operator>>(std::istream& is, std::vector<Params...>& v) -> std::istream&
-    {
-        for (auto& e : v) {
-            is >> e;
-        }
-        return is;
-    }
-    template <typename TupleType, typename>
-    auto operator>>(std::istream& is, TupleType& t) -> std::istream&
-    {
-        return std::apply([&is](auto&... args) -> std::istream& { return (is >> ... >> args); }, t);
-    }
-    namespace detail {
-        template <typename Type, typename = std::enable_if_t<is_tuple_like_v<Type>>>
-        void print_tuple_like(std::ostream& os, Type const& tuple)
+    using utils::is_printable_v;
+    using utils::is_scannable_v;
+    template <usize Capacity>
+    struct input_buffer {
+        friend serializer<void>;
+        friend serializer<char>; // only char gets special treatment
+        input_buffer(std::istream& is)
+            : m_is { is }
         {
-            std::apply([&os](auto const&... args) {
-                usize n {};
-                ((os << (n++ != 0 ? (os.iword(pretty_index) ? ", " : " ") : "") << args), ...);
-            },
-                       tuple);
         }
-        template <usize... I, typename... Ts>
-        void debug_impl(std::vector<std::string_view> const& names, std::index_sequence<I...>, Ts const&... args)
+        void read(char* dest, usize size)
         {
-            using str::strip;
-            (putln(std::cerr, "\t", strip(names[I]), ": ", args), ...);
-        }
-    }
-    auto operator<<(std::ostream& os, std::string_view strv) -> std::ostream&
-    {
-        if (os.iword(pretty_index)) {
-            os << "\"";
-        }
-        std::operator<<(os, strv);
-        if (os.iword(pretty_index)) {
-            os << "\"";
-        }
-        return os;
-    }
-    auto operator<<(std::ostream& os, std::string const& str) -> std::ostream&
-    {
-        if (os.iword(pretty_index)) {
-            os << "\"";
-        }
-        std::operator<<(os, str);
-        if (os.iword(pretty_index)) {
-            os << "\"";
-        }
-        return os;
-    }
-    template <typename... Params>
-    auto operator<<(std::ostream& os, std::vector<Params...> const& vector) -> std::ostream&
-    {
-        if (os.iword(pretty_index)) {
-            os << "[";
-        }
-        auto first = std::begin(vector);
-        auto last  = std::end(vector);
-        while (first != last) {
-            os << *first++;
-            if (first != last) {
-                os << (os.iword(pretty_index) ? ", " : " ");
-            } else {
-                break;
+            usize copied = 0;
+            while (copied < size) {
+                auto available = m_count - m_read;
+                if (available == 0) {
+                    m_refill();
+                    available = m_count - m_count;
+                    if (available == 0) {
+                        return;
+                    }
+                }
+                auto copy_count = std::min(size - copied, available);
+                std::copy_n(m_buffer + m_read, copy_count, dest + copied);
+
+                m_read += copy_count;
+                copied += copy_count;
             }
         }
-        if (os.iword(pretty_index)) {
-            os << "]";
+
+    private:
+        void m_refill()
+        {
+            m_read = 0;
+            m_is.read(m_buffer, Capacity);
+            m_count = m_is.gcount();
         }
-        return os;
-    }
-    template <typename... Params>
-    auto operator<<(std::ostream& os, std::set<Params...> const& set) -> std::ostream&
-    {
-        if (os.iword(pretty_index)) {
-            os << "{";
+        std::istream& m_is;
+        char m_buffer[Capacity] {};
+        usize m_read {};
+        usize m_count {};
+    };
+    template <usize Capacity>
+    struct output_buffer {
+        output_buffer(std::ostream& os)
+            : m_os { os }
+        {
         }
-        auto first = std::begin(set);
-        auto last  = std::end(set);
-        while (first != last) {
-            os << *first++;
-            if (first != last) {
-                os << (os.iword(pretty_index) ? ", " : " ");
-            } else {
-                break;
+        void write(char const* src, usize size)
+        {
+            auto available = Capacity - m_size;
+            if (size > available) {
+                m_flush();
+                m_os.write(src, size);
+                return;
+            }
+            std::copy_n(src, size, m_buffer + m_size);
+            m_size += size;
+        }
+        ~output_buffer()
+        {
+            m_flush();
+        }
+
+    private:
+        void m_flush()
+        {
+            m_os.write(m_buffer, m_size);
+            m_size = 0;
+        }
+        std::ostream& m_os;
+        char m_buffer[Capacity] {};
+        usize m_size {};
+    };
+    template <>
+    struct serializer<void> {
+        template <usize Capacity>
+        static auto next_token(input_buffer<Capacity>& buffer, char*& dest, usize capacity) -> bool
+        {
+            return next_token(buffer, dest, capacity, [](char c) { return std::isspace(c); });
+        }
+        template <usize Capacity, typename DelimeterCallback>
+        static auto next_token(input_buffer<Capacity>& buffer, char*& dest, usize capacity, DelimeterCallback&& f) -> bool
+        {
+            char* first;
+            while (true) {
+                first = std::find_if_not(buffer.m_buffer + buffer.m_read, buffer.m_buffer + buffer.m_count, f);
+                if (first != buffer.m_buffer + buffer.m_count) {
+                    buffer.m_read += std::distance(buffer.m_buffer + buffer.m_read, first);
+                    break;
+                }
+                buffer.m_refill();
+                if (buffer.m_count == 0) {
+                    return false;
+                }
+            }
+            char* last     = std::find_if(first, buffer.m_buffer + buffer.m_count, f);
+            auto count     = std::min<usize>(last - first, capacity);
+            dest           = std::copy_n(first, count, dest);
+            buffer.m_read += count;
+            if (buffer.m_read == buffer.m_count) {
+                buffer.m_refill();
+                if (buffer.m_count != 0 && !f(buffer.m_buffer[0])) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    };
+    template <>
+    struct serializer<char> {
+        template <usize Capacity>
+        static void read(input_buffer<Capacity>& buffer, char& c)
+        {
+            if (buffer.m_read == buffer.m_count) {
+                buffer.m_refill();
+                if (buffer.m_count == 0) {
+                    c = 0;
+                    return;
+                }
+            }
+            c = buffer.m_buffer[buffer.m_read++];
+        }
+        template <usize Capacity>
+        static void write(output_buffer<Capacity>& buffer, char const& c)
+        {
+            buffer.write(&c, sizeof(char));
+        }
+    };
+    template <typename T>
+    struct serializer<T, std::enable_if_t<std::is_integral_v<T>>> {
+        inline static char digits[128] {};
+        template <usize Capacity>
+        static void read(input_buffer<Capacity>& buffer, T& value)
+        {
+            char* ptr = digits;
+            while (serializer<void>::next_token(buffer, ptr, sizeof(digits) - (ptr - digits))) { }
+
+            auto [_, ec] = std::from_chars(digits, ptr, value, 10);
+            if (ec != std::errc {}) {
+                value = 0;
             }
         }
-        if (os.iword(pretty_index)) {
-            os << "}";
+        template <usize Capacity>
+        static void write(output_buffer<Capacity>& buffer, T const& value)
+        {
+            auto [ptr, _] = std::to_chars(digits, digits + sizeof(digits), value, 10);
+            buffer.write(digits, ptr - digits);
         }
-        return os;
-    }
-    template <typename... Params>
-    auto operator<<(std::ostream& os, std::unordered_set<Params...> const& uset) -> std::ostream&
-    {
-        if (os.iword(pretty_index)) {
-            os << "{";
-        }
-        auto first = std::begin(uset);
-        auto last  = std::end(uset);
-        while (first != last) {
-            os << *first++;
-            if (first != last) {
-                os << (os.iword(pretty_index) ? ", " : " ");
-            } else {
-                break;
+        template <usize Capacity>
+        static void read(input_buffer<Capacity>& buffer, T& value, int parse_base)
+        {
+            char* ptr = digits;
+            while (serializer<void>::next_token(buffer, ptr, sizeof(digits) - (ptr - digits))) { }
+
+            auto [_, ec] = std::from_chars(digits, ptr, value, parse_base);
+            if (ec != std::errc {}) {
+                value = 0;
             }
         }
-        if (os.iword(pretty_index)) {
-            os << "}";
+        template <usize Capacity>
+        static void write(output_buffer<Capacity>& buffer, T const& value, int print_base)
+        {
+            auto [ptr, _] = std::to_chars(digits, digits + sizeof(digits), value, print_base);
+            buffer.write(digits, ptr - digits);
         }
-        return os;
-    }
-    template <typename... Params>
-    auto operator<<(std::ostream& os, std::map<Params...> const& map) -> std::ostream&
+    };
+template <typename T>
+struct serializer<T, std::enable_if_t<std::is_floating_point_v<T>>> {
+    inline static char digits[128] {};
+    template <usize Capacity>
+    static void read(input_buffer<Capacity>& buffer, T& value)
     {
-        if (os.iword(pretty_index)) {
-            os << "{";
+        char* ptr = digits;
+        while (serializer<void>::next_token(buffer, ptr, sizeof(digits) - (ptr - digits))) { }
+
+        auto [_, ec] = std::from_chars(digits, ptr, value, std::chars_format::fixed);
+        if (ec != std::errc {}) {
+            value = 0;
         }
-        auto first = std::begin(map);
-        auto last  = std::end(map);
-        while (first != last) {
-            os << first->first << (os.iword(pretty_index) ? ": " : " ") << first->second;
-            first++;
-            if (first != last) {
-                os << (os.iword(pretty_index) ? ", " : " ");
+    }
+    template <usize Capacity>
+    static void write(output_buffer<Capacity>& buffer, T const& value)
+    {
+        auto [ptr, _] = std::to_chars(digits, digits + sizeof(digits), value, std::chars_format::fixed, 2);
+        buffer.write(digits, ptr - digits);
+    }
+    template <usize Capacity>
+    static void read(input_buffer<Capacity>& buffer, T& value, std::chars_format parse_fmt)
+    {
+        char* ptr = digits;
+        while (serializer<void>::next_token(buffer, ptr, sizeof(digits) - (ptr - digits))) { }
+
+        auto [_, ec] = std::from_chars(digits, ptr, value, parse_fmt);
+        if (ec != std::errc {}) {
+            value = 0;
+        }
+    }
+    template <usize Capacity>
+    static void write(output_buffer<Capacity>& buffer, T const& value, int precision, std::chars_format print_fmt)
+    {
+        auto [ptr, _] = std::to_chars(digits, digits + sizeof(digits), value, print_fmt, precision);
+        buffer.write(digits, ptr - digits);
+    }
+};
+template <>
+struct serializer<std::string> {
+    template <usize Capacity>
+    static void read(input_buffer<Capacity>& buffer, std::string& value)
+    {
+        char buf[1024];
+        char* ptr = buf;
+        while (serializer<void>::next_token(buffer, ptr, sizeof(buf))) {
+            value.append(buf, ptr);
+            ptr = buf;
+        }
+        value.append(buf, ptr);
+    }
+    template <usize Capacity>
+    static void readln(input_buffer<Capacity>& buffer, std::string& value)
+    {
+        char buf[1024];
+        char* ptr = buf;
+        while (serializer<void>::next_token(buffer, ptr, sizeof(buf), [](char c) { return c == '\r' || c == '\n'; })) {
+            value.append(buf, ptr);
+            ptr = buf;
+        }
+        value.append(buf, ptr);
+    }
+    template <usize Capacity>
+    static void write(output_buffer<Capacity>& buffer, std::string const& value)
+    {
+        buffer.write(value.data(), value.size());
+    }
+};
+template <>
+struct serializer<std::string_view> {
+    template <usize Capacity>
+    static void write(output_buffer<Capacity>& buffer, std::string_view const& value)
+    {
+        buffer.write(value.data(), value.size());
+    }
+};
+template <typename T>
+struct serializer<std::vector<T>> {
+    template <usize Capacity>
+    static auto read(input_buffer<Capacity>& buffer, std::vector<T>& value) -> std::enable_if_t<is_scannable_v<T>>
+    {
+        for (T& e : value) {
+            serializer<T>::read(buffer, e);
+        }
+    }
+    template <usize Capacity>
+    static auto write(output_buffer<Capacity>& buffer, std::vector<T> const& value) -> std::enable_if_t<is_printable_v<T>>
+    {
+        bool first = true;
+        for (T const& e : value) {
+            if (first) {
+                serializer<T>::write(buffer, e);
+                first = false;
             } else {
-                break;
+                serializer<char>::write(buffer, ' ');
+                serializer<T>::write(buffer, e);
             }
         }
-        if (os.iword(pretty_index)) {
-            os << "}";
-        }
-        return os;
     }
-    template <typename... Params>
-    auto operator<<(std::ostream& os, std::unordered_map<Params...> const& umap) -> std::ostream&
+};
+class reader {
+public:
+    reader(std::istream& is)
+        : m_buffer { is }
     {
-        if (os.iword(pretty_index)) {
-            os << "{";
-        }
-        auto first = std::begin(umap);
-        auto last  = std::end(umap);
-        while (first != last) {
-            os << first->first << (os.iword(pretty_index) ? ": " : " ") << first->second;
-            first++;
-            if (first != last) {
-                os << (os.iword(pretty_index) ? ", " : " ");
-            } else {
-                break;
-            }
-        }
-        if (os.iword(pretty_index)) {
-            os << "}";
-        }
-        return os;
-    }
-    template <typename T, usize N>
-    auto operator<<(std::ostream& os, std::array<T, N> const& array) -> std::ostream&
-    {
-        if (os.iword(pretty_index)) {
-            os << "[";
-        }
-        detail::print_tuple_like(os, array);
-        if (os.iword(pretty_index)) {
-            os << "]";
-        }
-        return os;
     }
     template <typename... Ts>
-    auto operator<<(std::ostream& os, std::tuple<Ts...> const& tuple) -> std::ostream&
+    void read(Ts&... args) { (m_read_value(args), ...); }
+    void readln(std::string& line)
     {
-        if (os.iword(pretty_index)) {
-            os << "(";
-        }
-        detail::print_tuple_like(os, tuple);
-        if (os.iword(pretty_index)) {
-            os << ")";
-        }
-        return os;
+        line.clear();
+        serializer<std::string>::readln(m_buffer, line);
     }
-    template <typename T, typename U>
-    auto operator<<(std::ostream& os, std::pair<T, U> const& pair) -> std::ostream&
+    void set_float_parse_fmt(std::chars_format fmt) noexcept { m_float_parse_fmt = fmt; }
+    void set_integer_parse_base(int base) noexcept { m_int_parse_base = base; }
+
+private:
+    template <typename T>
+    void m_read_value(T& value)
     {
-        if (os.iword(pretty_index)) {
-            os << "(";
-        }
-        detail::print_tuple_like(os, pair);
-        if (os.iword(pretty_index)) {
-            os << ")";
-        }
-        return os;
-    }
-    template <i64 Mod>
-    auto operator<<(std::ostream& os, ds::mint<Mod> const& m) -> std::ostream& { return os << m.value(); }
-    template <typename... Ts>
-    void scan(std::istream& is, Ts&... args)
-    {
-        using utils::is_scannable;
-        static_assert(sizeof...(Ts) > 0, "need at least one element to scan");
-        static_assert(std::conjunction_v<is_scannable<Ts>...>, "not all types are scannable"); // GCC 11.1 bug (hackerrank, cses) -- causes compilation error something related to ADL
-        auto holder = std::make_tuple(std::ref(args)...);
-        is >> holder;
-    }
-    void scanln(std::istream& is, std::string& line)
-    {
-        std::getline(is >> std::ws, line);
-    }
-    template <char... Seps, typename T, typename>
-    void put(std::ostream& os, T first, T last)
-    {
-        if (first == last) {
-            return;
-        }
-        os << *first++;
-        while (first != last) {
-            if constexpr (sizeof...(Seps) == 0) {
-                os << ' ';
-            } else {
-                (os << ... << Seps);
-            }
-            os << *first++;
-        }
-    }
-    template <char... Seps, typename... Ts>
-    void put(std::ostream& os, Ts const&... args)
-    {
-        bool first { true };
-        if constexpr (sizeof...(Seps) == 0) {
-            ((first ? (first = false, os << args) : (os << ' ' << args)), ...);
-        } else if constexpr (sizeof...(Seps) == 1 && std::get<0>(std::make_tuple(Seps...)) == 0) {
-            (os << ... << args);
+        if constexpr (!is_scannable_v<T>) {
+            static_assert(false, "type is not scannable");
+        } else if constexpr (std::is_floating_point_v<T>) {
+            serializer<T>::read(m_buffer, value, m_float_parse_fmt);
+        } else if constexpr (std::is_integral_v<T> && !std::is_same_v<T, char>) {
+            serializer<T>::read(m_buffer, value, m_int_parse_base);
         } else {
-            ((first ? (first = false, os << args) : (os << ... << Seps) << args), ...);
+            serializer<T>::read(m_buffer, value);
         }
     }
-    template <typename... Ts>
-    void debug(char const* name_str, Ts const&... args)
+    input_buffer<1 << 16> m_buffer;
+    int m_int_parse_base = 10;
+    std::chars_format m_float_parse_fmt { std::chars_format::fixed };
+};
+class writer {
+public:
+    writer(std::ostream& os)
+        : m_buffer(os)
     {
-        putln(std::cerr, "{");
-        auto names = str::split(name_str, ",");
-        std::cout << pretty;
-        detail::debug_impl(names, std::make_index_sequence<sizeof...(args)> {}, args...);
-        std::cout << pretty;
-        putln(std::cerr, "}");
     }
+    template <typename... Ts>
+    void write_with_separator(std::string_view separator, Ts const&... args)
+    {
+        bool first = true;
+        ((first ? (first = false, m_write_value(args))
+                : (m_write_value(separator), m_write_value(args))),
+         ...);
+    }
+    template <typename... Ts>
+    void writeln_with_separator(std::string_view separator, Ts const&... args)
+    {
+        write_with_separator(separator, args...);
+#if _WIN32 || _WIN64
+        write('\r');
+        write('\n');
+#else
+        write('\n');
+#endif
+    }
+    template <typename... Ts>
+    void write(Ts const&... args) { write_with_separator(" ", args...); }
+    template <typename... Ts>
+    void writeln(Ts const&... args)
+    {
+        write(args...);
+#if _WIN32 || _WIN64
+        write('\r');
+        write('\n');
+#else
+        write('\n');
+#endif
+    }
+    void set_float_precision(int precision) noexcept { m_float_precision = precision; }
+    void set_float_print_fmt(std::chars_format fmt) noexcept { m_float_print_fmt = fmt; }
+    void set_integer_print_base(int base) noexcept { m_int_print_base = base; }
+
+private:
+    template <typename T>
+    void m_write_value(T const& value)
+    {
+        if constexpr (!is_printable_v<T>) {
+            static_assert(false, "type is not printable");
+        } else if constexpr (std::is_floating_point_v<T>) {
+            serializer<T>::write(m_buffer, value, m_float_precision, m_float_print_fmt);
+        } else if constexpr (std::is_integral_v<T> && !std::is_same_v<T, char>) {
+            serializer<T>::write(m_buffer, value, m_int_print_base);
+        } else {
+            serializer<T>::write(m_buffer, value);
+        }
+    }
+
+    output_buffer<1 << 16> m_buffer;
+    int m_int_print_base  = 10;
+    int m_float_precision = 2;
+    std::chars_format m_float_print_fmt { std::chars_format::fixed };
+};
+reader rr { std::cin };
+writer ww { std::cout };
 }
 }
 using namespace speed;
 using algo::cond_binary_search;
 using ds::dsu;
 using ds::mint;
-using io::put;
-using io::putln;
-using io::scan;
-using io::scanln;
+using io::rr;
+using io::ww;
 using math::binary_expo;
 using math::binomial_coeff;
 using math::ceil;
@@ -769,19 +810,36 @@ using math::uclamp;
 using str::split;
 using str::strip;
 // for ADL lookup -- workaround for the compiler bug
-using io::operator<<;
-using io::operator>>;
-#define DEBUG(...)                            \
-    do {                                      \
-        io::debug(#__VA_ARGS__, __VA_ARGS__); \
-    } while (false)
 using namespace std;
+
+template <typename... Ts>
+void read(Ts&... args) { rr.read(args...); }
+template <typename... Ts>
+void write(Ts const&... args) { ww.write(args...); }
+template <typename... Ts>
+void writeln(Ts const&... args) { ww.writeln(args...); }
+
 int main()
 {
-    ios_base::sync_with_stdio(false);
-    cin.tie(nullptr);
+    // ios_base::sync_with_stdio(false);
+    // cin.tie(nullptr);
 
-    int T {};
-    for (scan(T); T--;) {
+    int T;
+    for (read(T); T--;) {
+        i32 n;
+        read(n);
+        i32 t = (n * (n - 1)) / 2;
+        vector<i32> v(t);
+        read(v);
+
+        r::sort(v, greater {});
+
+        vector<i32> b(n);
+        for (i32 i = 0, l = 1; l != n; i += l, l++) {
+            b[l - 1] = v[i];
+        }
+        b.back() = b.front();
+
+        writeln(b);
     }
 }
