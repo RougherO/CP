@@ -40,12 +40,10 @@ namespace str {
     auto strip(std::string_view) -> std::string_view;
 }
 namespace io {
+    class reader;
+    class writer;
     template <typename T, typename = void>
     struct serializer;
-    template <usize Capacity>
-    struct input_buffer;
-    template <usize Capacity>
-    struct output_buffer;
 }
 namespace utils {
     template <typename>
@@ -72,22 +70,136 @@ namespace utils {
     struct is_integer<ds::mint<Mod>> : std::true_type { };
     template <typename T>
     constexpr bool is_integer_v = is_integer<T>::value;
-    template <typename T, typename = void>
-    struct is_scannable : std::false_type { };
+    namespace detail {
+        template <typename T, typename... Args>
+        auto is_scannable_helper(int) -> decltype(io::serializer<T>::read(
+                                                      std::declval<io::reader&>(),
+                                                      std::declval<T&>(),
+                                                      std::declval<std::decay_t<Args>>()...),
+                                                  std::true_type {});
+        template <typename>
+        auto is_scannable_helper(...) -> std::false_type;
+        template <typename T, typename... Args>
+        auto is_printable_helper(int) -> decltype(io::serializer<T>::write(
+                                                      std::declval<io::writer&>(),
+                                                      std::declval<T const&>(),
+                                                      std::declval<std::decay_t<Args>>()...),
+                                                  std::true_type {});
+        template <typename>
+        auto is_printable_helper(...) -> std::false_type;
+    }
     template <typename T>
-    struct is_scannable<T, std::void_t<decltype(io::serializer<T>::read(
-                               std::declval<io::input_buffer<0>&>(),
-                               std::declval<T&>()))>> : std::true_type { };
+    using is_scannable = decltype(detail::is_scannable_helper<T>(0));
     template <typename T>
     bool constexpr is_scannable_v = is_scannable<T>::value;
-    template <typename T, typename = void>
-    struct is_printable : std::false_type { };
     template <typename T>
-    struct is_printable<T, std::void_t<decltype(io::serializer<T>::write(
-                               std::declval<io::output_buffer<0>&>(),
-                               std::declval<T const&>()))>> : std::true_type { };
+    using is_printable = decltype(detail::is_printable_helper<T>(0));
     template <typename T>
     bool constexpr is_printable_v = is_printable<T>::value;
+}
+namespace io {
+    template <usize Capacity>
+    struct input_buffer {
+        friend serializer<void>;
+        friend reader;
+        input_buffer(std::istream& is)
+            : m_is { is }
+        {
+        }
+
+    private:
+        void m_refill()
+        {
+            m_read = 0;
+            m_is.read(m_buffer, Capacity);
+            m_count = m_is.gcount();
+        }
+        std::istream& m_is;
+        char m_buffer[Capacity] {};
+        usize m_read {};
+        usize m_count {};
+    };
+    template <usize Capacity>
+    struct output_buffer {
+        friend writer;
+        output_buffer(std::ostream& os)
+            : m_os { os }
+        {
+        }
+        void write(char const* src, usize size)
+        {
+            auto available = Capacity - m_size;
+            if (size > available) {
+                m_flush();
+                m_os.write(src, size);
+                return;
+            }
+            std::copy_n(src, size, m_buffer + m_size);
+            m_size += size;
+        }
+        ~output_buffer()
+        {
+            m_flush();
+        }
+
+    private:
+        void m_flush()
+        {
+            m_os.write(m_buffer, m_size);
+            m_size = 0;
+        }
+        std::ostream& m_os;
+        char m_buffer[Capacity] {};
+        usize m_size {};
+    };
+    template <>
+    struct serializer<void> {
+        // Copy `capacity` bytes to `dest` based on a delimeter `f`
+        // Returns true if more bytes are left to be scanned for the next token
+        // Should be called repeatedly in a while loop
+        template <usize Capacity, typename DelimeterCallback>
+        static auto next_token(input_buffer<Capacity>&, char*&, usize, DelimeterCallback&&) -> bool;
+        // Same as above except gets called with default delimeter of whitespace
+        template <usize Capacity>
+        static auto next_token(input_buffer<Capacity>&, char*&, usize) -> bool;
+    };
+    template <>
+    struct serializer<char> {
+        static void read(reader&, char&);
+        static void write(writer&, char const&);
+    };
+    template <typename T>
+    struct serializer<T, std::enable_if_t<std::is_integral_v<T>>> {
+        inline static char digits[128] {};
+        static void read(reader&, T&);
+        static void write(writer&, T const&);
+    };
+    template <typename T>
+    struct serializer<T, std::enable_if_t<std::is_floating_point_v<T>>> {
+        inline static char digits[128] {};
+        static void read(reader&, T&);
+        static void write(writer&, T const&);
+    };
+    template <usize N>
+    struct serializer<char[N]> {
+        static void read(reader&, char (&)[N]);
+        static void write(writer&, char const (&)[N]);
+    };
+    template <>
+    struct serializer<std::string> {
+        inline static char buf[128] {};
+        static void read(reader&, std::string&);
+        static void write(writer&, std::string const&);
+    };
+    template <>
+    struct serializer<std::string_view> {
+        static void write(writer&, std::string_view const&);
+    };
+    template <typename T>
+    struct serializer<std::vector<T>> {
+        static auto read(reader&, std::vector<T>&) -> std::enable_if_t<utils::is_scannable_v<T>>;
+        static auto write(writer&, std::vector<T> const&) -> std::enable_if_t<utils::is_printable_v<T>>;
+    };
 }
 namespace algo {
     // Does a conditional binary search with a conditional
@@ -411,217 +523,198 @@ namespace math {
     }
 }
 namespace io {
-    using utils::is_printable_v;
-    using utils::is_scannable_v;
-    template <usize Capacity>
-    struct input_buffer {
-        friend serializer<void>;
-        friend serializer<char>; // only char gets special treatment
-        input_buffer(std::istream& is)
-            : m_is { is }
+    class reader {
+    public:
+        reader(std::istream& is)
+            : m_buffer { is }
         {
         }
-        void read(char* dest, usize size)
+        auto eof() const noexcept -> bool { return m_buffer.m_count == 0; }
+        template <typename... Ts>
+        void read(Ts&... args) { (m_read_value(args), ...); }
+        // special handling for fixed size buffered input
+        // returns true when more characters are still part of the current line
+        // false when eof or newline is encountered
+        // Reads upto N - 1 characters and puts a null at the end
+        template <usize N>
+        auto readln(char (&line)[N]) -> bool
         {
-            usize copied = 0;
-            while (copied < size) {
-                auto available = m_count - m_read;
-                if (available == 0) {
-                    m_refill();
-                    available = m_count - m_count;
-                    if (available == 0) {
-                        return;
-                    }
-                }
-                auto copy_count = std::min(size - copied, available);
-                std::copy_n(m_buffer + m_read, copy_count, dest + copied);
+            char* ptr           = line;
+            bool has_more_chars = serializer<void>::next_token(m_buffer, ptr, N - 1, [](char c) { return c == '\r' || c == '\n'; });
+            *ptr                = 0;
+            return has_more_chars;
+        }
+        void readln(std::string& line)
+        {
+            line.clear();
+            line.resize(16);
 
-                m_read += copy_count;
-                copied += copy_count;
+            char* ptr = line.data();
+            while (serializer<void>::next_token(m_buffer, ptr, line.size() / 2,
+                                                [](char c) { return c == '\r' || c == '\n'; })) {
+                line.resize(line.size() * 2);
+                ptr = line.data() + line.size() / 2;
             }
         }
-
-    private:
-        void m_refill()
-        {
-            m_read = 0;
-            m_is.read(m_buffer, Capacity);
-            m_count = m_is.gcount();
-        }
-        std::istream& m_is;
-        char m_buffer[Capacity] {};
-        usize m_read {};
-        usize m_count {};
-    };
-    template <usize Capacity>
-    struct output_buffer {
-        output_buffer(std::ostream& os)
-            : m_os { os }
-        {
-        }
-        void write(char const* src, usize size)
-        {
-            auto available = Capacity - m_size;
-            if (size > available) {
-                m_flush();
-                m_os.write(src, size);
-                return;
-            }
-            std::copy_n(src, size, m_buffer + m_size);
-            m_size += size;
-        }
-        ~output_buffer()
-        {
-            m_flush();
-        }
+        void set_float_parse_fmt(std::chars_format fmt) noexcept { m_float_parse_fmt = fmt; }
+        void set_integer_parse_base(int base) noexcept { m_int_parse_base = base; }
+        auto get_float_parse_fmt() const noexcept -> std::chars_format { return m_float_parse_fmt; }
+        auto get_integer_parse_base() const noexcept -> int { return m_int_parse_base; }
+        auto get_buffer() noexcept -> auto& { return m_buffer; }
 
     private:
-        void m_flush()
-        {
-            m_os.write(m_buffer, m_size);
-            m_size = 0;
-        }
-        std::ostream& m_os;
-        char m_buffer[Capacity] {};
-        usize m_size {};
+        template <typename T>
+        auto m_read_value(T& value) -> std::enable_if_t<utils::is_scannable_v<T>> { serializer<T>::read(*this, value); }
+
+        input_buffer<1 << 16> m_buffer;
+        int m_int_parse_base = 10;
+        std::chars_format m_float_parse_fmt { std::chars_format::fixed };
     };
-    template <>
-    struct serializer<void> {
-        template <usize Capacity>
-        static auto next_token(input_buffer<Capacity>& buffer, char*& dest, usize capacity) -> bool
+    class writer {
+    public:
+        writer(std::ostream& os)
+            : m_buffer(os)
         {
-            return next_token(buffer, dest, capacity, [](char c) { return std::isspace(c); });
         }
-        template <usize Capacity, typename DelimeterCallback>
-        static auto next_token(input_buffer<Capacity>& buffer, char*& dest, usize capacity, DelimeterCallback&& f) -> bool
+        template <typename... Ts>
+        void write(Ts const&... args) { write_with_separator(" ", args...); }
+        template <typename... Ts>
+        void writeln(Ts const&... args)
         {
-            char* first;
-            while (true) {
-                first = std::find_if_not(buffer.m_buffer + buffer.m_read, buffer.m_buffer + buffer.m_count, f);
-                if (first != buffer.m_buffer + buffer.m_count) {
-                    buffer.m_read += std::distance(buffer.m_buffer + buffer.m_read, first);
-                    break;
-                }
-                buffer.m_refill();
-                if (buffer.m_count == 0) {
-                    return false;
-                }
-            }
-            char* last     = std::find_if(first, buffer.m_buffer + buffer.m_count, f);
-            auto count     = std::min<usize>(last - first, capacity);
-            dest           = std::copy_n(first, count, dest);
-            buffer.m_read += count;
-            if (buffer.m_read == buffer.m_count) {
-                buffer.m_refill();
-                if (buffer.m_count != 0 && !f(buffer.m_buffer[0])) {
-                    return true;
-                }
-            }
-            return false;
+            write(args...);
+#if _WIN32 || _WIN64
+            write('\r');
+            write('\n');
+#else
+            write('\n');
+#endif
         }
+        template <typename... Ts>
+        void write_with_separator(std::string_view separator, Ts const&... args)
+        {
+            bool first = true;
+            ((first ? (first = false, m_write_value(args))
+                    : (m_write_value(separator), m_write_value(args))),
+             ...);
+        }
+        template <typename... Ts>
+        void writeln_with_separator(std::string_view separator, Ts const&... args)
+        {
+            write_with_separator(separator, args...);
+#if _WIN32 || _WIN64
+            write('\r');
+            write('\n');
+#else
+            write('\n');
+#endif
+        }
+        void set_float_precision(int precision) noexcept { m_float_precision = precision; }
+        void set_float_print_fmt(std::chars_format fmt) noexcept { m_float_print_fmt = fmt; }
+        void set_integer_print_base(int base) noexcept { m_int_print_base = base; }
+        auto get_float_precision() const noexcept -> int { return m_float_precision; }
+        auto get_float_print_fmt() const noexcept -> std::chars_format { return m_float_print_fmt; }
+        auto get_integer_print_base() const noexcept -> int { return m_int_print_base; }
+        auto get_buffer() noexcept -> auto& { return m_buffer; }
+
+    private:
+        template <typename T>
+        auto m_write_value(T const& value) -> std::enable_if_t<utils::is_printable_v<T>> { serializer<T>::write(*this, value); }
+
+        output_buffer<1 << 16> m_buffer;
+        int m_int_print_base  = 10;
+        int m_float_precision = 2;
+        std::chars_format m_float_print_fmt { std::chars_format::fixed };
     };
-    template <>
-    struct serializer<char> {
-        template <usize Capacity>
-        static void read(input_buffer<Capacity>& buffer, char& c)
-        {
-            if (buffer.m_read == buffer.m_count) {
-                buffer.m_refill();
-                if (buffer.m_count == 0) {
-                    c = 0;
-                    return;
-                }
+    template <usize Capacity, typename DelimeterCallback>
+    auto serializer<void>::next_token(input_buffer<Capacity>& buffer, char*& dest, usize capacity, DelimeterCallback&& f) -> bool
+    {
+        char* first;
+        while (true) {
+            first = std::find_if_not(buffer.m_buffer + buffer.m_read, buffer.m_buffer + buffer.m_count, f);
+            if (first != buffer.m_buffer + buffer.m_count) {
+                buffer.m_read += std::distance(buffer.m_buffer + buffer.m_read, first);
+                break;
             }
-            c = buffer.m_buffer[buffer.m_read++];
+            buffer.m_refill();
+            if (buffer.m_count == 0) {
+                return false;
+            }
         }
-        template <usize Capacity>
-        static void write(output_buffer<Capacity>& buffer, char const& c)
-        {
-            buffer.write(&c, sizeof(char));
+        char* last     = std::find_if(first, buffer.m_buffer + buffer.m_count, f);
+        auto count     = std::min<usize>(last - first, capacity);
+        dest           = std::copy_n(first, count, dest);
+        buffer.m_read += count;
+        if (buffer.m_read == buffer.m_count) {
+            buffer.m_refill();
+            if (buffer.m_count != 0 && !f(buffer.m_buffer[0])) {
+                return true;
+            }
         }
-    };
+        if (count == capacity && !f(buffer.m_buffer[buffer.m_read])) {
+            return true;
+        }
+        return false;
+    }
+    template <usize Capacity>
+    auto serializer<void>::next_token(input_buffer<Capacity>& buffer, char*& dest, usize capacity) -> bool
+    {
+        return next_token(buffer, dest, capacity, [](char c) { return std::isspace(c); });
+    }
+    void serializer<char>::read(reader& r, char& c)
+    {
+        char* ptr = &c;
+        serializer<void>::next_token(r.get_buffer(), ptr, 1);
+    }
+    void serializer<char>::write(writer& w, char const& c) { w.get_buffer().write(&c, 1); }
     template <typename T>
-    struct serializer<T, std::enable_if_t<std::is_integral_v<T>>> {
-        inline static char digits[128] {};
-        template <usize Capacity>
-        static void read(input_buffer<Capacity>& buffer, T& value)
-        {
-            char* ptr = digits;
-            while (serializer<void>::next_token(buffer, ptr, sizeof(digits) - (ptr - digits))) { }
-
-            auto [_, ec] = std::from_chars(digits, ptr, value, 10);
-            if (ec != std::errc {}) {
-                value = 0;
-            }
-        }
-        template <usize Capacity>
-        static void write(output_buffer<Capacity>& buffer, T const& value)
-        {
-            auto [ptr, _] = std::to_chars(digits, digits + sizeof(digits), value, 10);
-            buffer.write(digits, ptr - digits);
-        }
-        template <usize Capacity>
-        static void read(input_buffer<Capacity>& buffer, T& value, int parse_base)
-        {
-            char* ptr = digits;
-            while (serializer<void>::next_token(buffer, ptr, sizeof(digits) - (ptr - digits))) { }
-
-            auto [_, ec] = std::from_chars(digits, ptr, value, parse_base);
-            if (ec != std::errc {}) {
-                value = 0;
-            }
-        }
-        template <usize Capacity>
-        static void write(output_buffer<Capacity>& buffer, T const& value, int print_base)
-        {
-            auto [ptr, _] = std::to_chars(digits, digits + sizeof(digits), value, print_base);
-            buffer.write(digits, ptr - digits);
-        }
-    };
-template <typename T>
-struct serializer<T, std::enable_if_t<std::is_floating_point_v<T>>> {
-    inline static char digits[128] {};
-    template <usize Capacity>
-    static void read(input_buffer<Capacity>& buffer, T& value)
+    void serializer<T, std::enable_if_t<std::is_integral_v<T>>>::read(reader& r, T& value)
     {
-        char* ptr = digits;
+        auto& buffer = r.get_buffer();
+        char* ptr    = digits;
         while (serializer<void>::next_token(buffer, ptr, sizeof(digits) - (ptr - digits))) { }
 
-        auto [_, ec] = std::from_chars(digits, ptr, value, std::chars_format::fixed);
+        auto [_, ec] = std::from_chars(digits, ptr, value, r.get_integer_parse_base());
         if (ec != std::errc {}) {
             value = 0;
         }
     }
-    template <usize Capacity>
-    static void write(output_buffer<Capacity>& buffer, T const& value)
+    template <typename T>
+    void serializer<T, std::enable_if_t<std::is_integral_v<T>>>::write(writer& w, T const& value)
     {
-        auto [ptr, _] = std::to_chars(digits, digits + sizeof(digits), value, std::chars_format::fixed, 2);
-        buffer.write(digits, ptr - digits);
+        auto [ptr, _] = std::to_chars(digits, digits + sizeof(digits), value, w.get_integer_print_base());
+        w.get_buffer().write(digits, ptr - digits);
     }
-    template <usize Capacity>
-    static void read(input_buffer<Capacity>& buffer, T& value, std::chars_format parse_fmt)
+    template <typename T>
+    void serializer<T, std::enable_if_t<std::is_floating_point_v<T>>>::read(reader& r, T& value)
     {
-        char* ptr = digits;
+        auto& buffer = r.get_buffer();
+        char* ptr    = digits;
         while (serializer<void>::next_token(buffer, ptr, sizeof(digits) - (ptr - digits))) { }
 
-        auto [_, ec] = std::from_chars(digits, ptr, value, parse_fmt);
+        auto [_, ec] = std::from_chars(digits, ptr, value, r.get_float_parse_fmt());
         if (ec != std::errc {}) {
             value = 0;
         }
     }
-    template <usize Capacity>
-    static void write(output_buffer<Capacity>& buffer, T const& value, int precision, std::chars_format print_fmt)
+    template <typename T>
+    void serializer<T, std::enable_if_t<std::is_floating_point_v<T>>>::write(writer& w, T const& value)
     {
-        auto [ptr, _] = std::to_chars(digits, digits + sizeof(digits), value, print_fmt, precision);
-        buffer.write(digits, ptr - digits);
+        auto [ptr, _] = std::to_chars(digits, digits + sizeof(digits), value, w.get_float_print_fmt(), w.get_float_precision());
+        w.get_buffer().write(digits, ptr - digits);
     }
-};
-template <>
-struct serializer<std::string> {
-    template <usize Capacity>
-    static void read(input_buffer<Capacity>& buffer, std::string& value)
+    template <usize N>
+    void serializer<char[N]>::read(reader& r, char (&value)[N])
     {
-        char buf[1024];
+        static_assert(N > 1, "not enough buffer space. Expect size for at least 2 chars including null");
+        char* ptr = value;
+        serializer<void>::next_token(r.get_buffer(), ptr, N - 1, [](char) { return true; });
+        *ptr = 0;
+    }
+    template <usize N>
+    void serializer<char[N]>::write(writer& w, char const (&value)[N]) { w.get_buffer().write(value, strnlen(value, N)); }
+    void serializer<std::string>::read(reader& r, std::string& value)
+    {
+        auto& buffer = r.get_buffer();
         char* ptr = buf;
         while (serializer<void>::next_token(buffer, ptr, sizeof(buf))) {
             value.append(buf, ptr);
@@ -629,153 +722,31 @@ struct serializer<std::string> {
         }
         value.append(buf, ptr);
     }
-    template <usize Capacity>
-    static void readln(input_buffer<Capacity>& buffer, std::string& value)
-    {
-        char buf[1024];
-        char* ptr = buf;
-        while (serializer<void>::next_token(buffer, ptr, sizeof(buf), [](char c) { return c == '\r' || c == '\n'; })) {
-            value.append(buf, ptr);
-            ptr = buf;
-        }
-        value.append(buf, ptr);
-    }
-    template <usize Capacity>
-    static void write(output_buffer<Capacity>& buffer, std::string const& value)
-    {
-        buffer.write(value.data(), value.size());
-    }
-};
-template <>
-struct serializer<std::string_view> {
-    template <usize Capacity>
-    static void write(output_buffer<Capacity>& buffer, std::string_view const& value)
-    {
-        buffer.write(value.data(), value.size());
-    }
-};
-template <typename T>
-struct serializer<std::vector<T>> {
-    template <usize Capacity>
-    static auto read(input_buffer<Capacity>& buffer, std::vector<T>& value) -> std::enable_if_t<is_scannable_v<T>>
+    void serializer<std::string>::write(writer& w, std::string const& value) { w.get_buffer().write(value.data(), value.size()); }
+    void serializer<std::string_view>::write(writer& w, std::string_view const& value) { w.get_buffer().write(value.data(), value.size()); }
+    template <typename T>
+    auto serializer<std::vector<T>>::read(reader& r, std::vector<T>& value) -> std::enable_if_t<utils::is_scannable_v<T>>
     {
         for (T& e : value) {
-            serializer<T>::read(buffer, e);
+            r.read(e);
         }
     }
-    template <usize Capacity>
-    static auto write(output_buffer<Capacity>& buffer, std::vector<T> const& value) -> std::enable_if_t<is_printable_v<T>>
+    template <typename T>
+    auto serializer<std::vector<T>>::write(writer& w, std::vector<T> const& value) -> std::enable_if_t<utils::is_printable_v<T>>
     {
         bool first = true;
         for (T const& e : value) {
             if (first) {
-                serializer<T>::write(buffer, e);
+                w.write(e);
                 first = false;
             } else {
-                serializer<char>::write(buffer, ' ');
-                serializer<T>::write(buffer, e);
+                w.write(' ');
+                w.write(e);
             }
         }
     }
-};
-class reader {
-public:
-    reader(std::istream& is)
-        : m_buffer { is }
-    {
-    }
-    template <typename... Ts>
-    void read(Ts&... args) { (m_read_value(args), ...); }
-    void readln(std::string& line)
-    {
-        line.clear();
-        serializer<std::string>::readln(m_buffer, line);
-    }
-    void set_float_parse_fmt(std::chars_format fmt) noexcept { m_float_parse_fmt = fmt; }
-    void set_integer_parse_base(int base) noexcept { m_int_parse_base = base; }
-
-private:
-    template <typename T>
-    void m_read_value(T& value)
-    {
-        if constexpr (!is_scannable_v<T>) {
-            static_assert(false, "type is not scannable");
-        } else if constexpr (std::is_floating_point_v<T>) {
-            serializer<T>::read(m_buffer, value, m_float_parse_fmt);
-        } else if constexpr (std::is_integral_v<T> && !std::is_same_v<T, char>) {
-            serializer<T>::read(m_buffer, value, m_int_parse_base);
-        } else {
-            serializer<T>::read(m_buffer, value);
-        }
-    }
-    input_buffer<1 << 16> m_buffer;
-    int m_int_parse_base = 10;
-    std::chars_format m_float_parse_fmt { std::chars_format::fixed };
-};
-class writer {
-public:
-    writer(std::ostream& os)
-        : m_buffer(os)
-    {
-    }
-    template <typename... Ts>
-    void write_with_separator(std::string_view separator, Ts const&... args)
-    {
-        bool first = true;
-        ((first ? (first = false, m_write_value(args))
-                : (m_write_value(separator), m_write_value(args))),
-         ...);
-    }
-    template <typename... Ts>
-    void writeln_with_separator(std::string_view separator, Ts const&... args)
-    {
-        write_with_separator(separator, args...);
-#if _WIN32 || _WIN64
-        write('\r');
-        write('\n');
-#else
-        write('\n');
-#endif
-    }
-    template <typename... Ts>
-    void write(Ts const&... args) { write_with_separator(" ", args...); }
-    template <typename... Ts>
-    void writeln(Ts const&... args)
-    {
-        write(args...);
-#if _WIN32 || _WIN64
-        write('\r');
-        write('\n');
-#else
-        write('\n');
-#endif
-    }
-    void set_float_precision(int precision) noexcept { m_float_precision = precision; }
-    void set_float_print_fmt(std::chars_format fmt) noexcept { m_float_print_fmt = fmt; }
-    void set_integer_print_base(int base) noexcept { m_int_print_base = base; }
-
-private:
-    template <typename T>
-    void m_write_value(T const& value)
-    {
-        if constexpr (!is_printable_v<T>) {
-            static_assert(false, "type is not printable");
-        } else if constexpr (std::is_floating_point_v<T>) {
-            serializer<T>::write(m_buffer, value, m_float_precision, m_float_print_fmt);
-        } else if constexpr (std::is_integral_v<T> && !std::is_same_v<T, char>) {
-            serializer<T>::write(m_buffer, value, m_int_print_base);
-        } else {
-            serializer<T>::write(m_buffer, value);
-        }
-    }
-
-    output_buffer<1 << 16> m_buffer;
-    int m_int_print_base  = 10;
-    int m_float_precision = 2;
-    std::chars_format m_float_print_fmt { std::chars_format::fixed };
-};
-reader rr { std::cin };
-writer ww { std::cout };
+    reader rr { std::cin };
+    writer ww { std::cout };
 }
 }
 using namespace speed;
@@ -799,7 +770,6 @@ using math::sqr;
 using math::uclamp;
 using str::split;
 using str::strip;
-// for ADL lookup -- workaround for the compiler bug
 using namespace std;
 
 template <typename... Ts>
@@ -818,18 +788,9 @@ int main()
     for (read(T); T--;) {
         i32 n;
         read(n);
-        i32 t = (n * (n - 1)) / 2;
-        vector<i32> v(t);
-        read(v);
+        vector<i32> p(n);
+        read(p);
 
-        r::sort(v, greater {});
-
-        vector<i32> b(n);
-        for (i32 i = 0, l = 1; l != n; i += l, l++) {
-            b[l - 1] = v[i];
-        }
-        b.back() = b.front();
-
-        writeln(b);
+        writeln(p);
     }
 }
