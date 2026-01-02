@@ -18,14 +18,22 @@ namespace v = std::views;
  * Thanks
  */
 namespace speed {
+using i8    = int8_t;
+using i16   = int16_t;
 using i32   = int32_t;
 using i64   = int64_t;
+using u8    = uint8_t;
+using u16   = int16_t;
 using u32   = uint32_t;
 using u64   = uint64_t;
 using isize = std::ptrdiff_t;
 using usize = std::size_t;
+auto operator""_i8(unsigned long long x) -> i8 { return x; }
+auto operator""_i16(unsigned long long x) -> i16 { return x; }
 auto operator""_i32(unsigned long long x) -> i32 { return x; }
 auto operator""_i64(unsigned long long x) -> i64 { return x; }
+auto operator""_u8(unsigned long long x) -> u8 { return x; }
+auto operator""_u16(unsigned long long x) -> u16 { return x; }
 auto operator""_u32(unsigned long long x) -> u32 { return x; }
 auto operator""_u64(unsigned long long x) -> u64 { return x; }
 auto operator""_iz(unsigned long long x) -> isize { return x; }
