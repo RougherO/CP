@@ -72,12 +72,6 @@ namespace utils {
                                            decltype(std::declval<T>()++)>> : std::true_type { };
     template <typename T>
     constexpr bool is_iterator_like_v = is_iterator_like<T>::value;
-    template <typename T>
-    struct is_integer : std::is_integral<T> { };
-    template <i64 Mod>
-    struct is_integer<ds::mint<Mod>> : std::true_type { };
-    template <typename T>
-    constexpr bool is_integer_v = is_integer<T>::value;
     namespace detail {
         template <typename T, typename... Args>
         auto is_scannable_helper(int) -> decltype(io::serializer<T>::read(
@@ -188,6 +182,11 @@ namespace io {
         static void read(reader&, T&);
         static void write(writer&, T const&);
     };
+    template <>
+    struct serializer<char const*> {
+        static void read(reader&, char const*&) = delete;
+        static void write(writer&, char const* const&);
+    };
     template <usize N>
     struct serializer<char[N]> {
         static void read(reader&, char (&)[N]);
@@ -290,7 +289,7 @@ namespace ds {
         constexpr auto operator<=(mint const& other) const noexcept -> bool { return !(*this > other); }
         constexpr auto operator>=(mint const& other) const noexcept -> bool { return !(*this < other); }
         constexpr auto operator!() const noexcept -> bool { return !x; }
-        template <typename T, typename = std::enable_if_t<utils::is_integer_v<T>>>
+        template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
         constexpr explicit operator T() const noexcept { return static_cast<T>(x); }
         constexpr auto zero() const noexcept -> bool { return x == 0; }
         constexpr auto value() const noexcept -> isize { return x; }
@@ -722,6 +721,11 @@ namespace io {
         auto [ptr, _] = std::to_chars(digits.data(), digits.data() + digits.size(), value, w.get_float_print_fmt(), w.get_float_precision());
         w.get_buffer().write(digits, ptr - digits);
     }
+    void serializer<char const*>::write(writer& w, char const* const& ptr)
+    {
+        usize len = strlen(ptr);
+        w.get_buffer().write(ptr, len);
+    }
     template <usize N>
     void serializer<char[N]>::read(reader& r, char (&value)[N])
     {
@@ -778,6 +782,16 @@ namespace io {
     }
     reader rr { std::cin };
     writer ww { std::cout };
+    writer ee { std::cerr };
+
+    template <typename... Args>
+    void debug_impl(char const* name_str, Args const&... args)
+    {
+        auto name_list = str::split(name_str, ",");
+
+        usize i = 0;
+        (ee.writeln('\"', str::strip(name_list[i++]), '"', ':', args), ...);
+    }
 }
 }
 using namespace speed;
@@ -806,6 +820,8 @@ template <typename... Ts>
 void write(Ts const&... args) { ww.write(args...); }
 template <typename... Ts>
 void writeln(Ts const&... args) { ww.writeln(args...); }
+
+#define DEBUG(...) io::debug_impl(#__VA_ARGS__, __VA_ARGS__)
 
 int main()
 {
