@@ -39,7 +39,7 @@ auto operator""_u64(unsigned long long x) -> u64 { return x; }
 auto operator""_iz(unsigned long long x) -> isize { return x; }
 auto operator""_uz(unsigned long long x) -> usize { return x; }
 namespace ds {
-    template <i64 Mod = 1'000'000'007>
+    template <isize Mod = 1'000'000'007>
     struct mint;
     struct dsu;
 }
@@ -246,23 +246,23 @@ namespace math {
     constexpr auto nmin_v = std::is_floating_point_v<T> ? std::numeric_limits<T>::lowest() : std::numeric_limits<T>::min();
 }
 namespace ds {
-    template <i64 Mod>
+    template <isize Mod>
     struct mint {
         constexpr mint() = default;
-        constexpr mint(i64 value)
+        explicit constexpr mint(isize value)
             : x { value % Mod }
         {
         }
-        friend constexpr auto operator+(mint const& l, mint const& r) noexcept -> mint { return (l.x + r.x) % Mod; }
-        friend constexpr auto operator-(mint const& l, mint const& r) noexcept -> mint { return (l.x - r.x) % Mod + (l.x < r.x ? Mod : 0); }
-        friend constexpr auto operator*(mint const& l, mint const& r) noexcept -> mint { return (l.x * r.x) % Mod; }
-        friend constexpr auto operator/(mint const& l, mint const& r) noexcept -> mint { return l.x * math::binary_expo(r, Mod - 2); }
-        friend constexpr auto operator%(mint const& l, mint const& r) noexcept -> mint { return l.x % r.x; }
-        friend constexpr auto operator<<(mint const& l, mint const& r) noexcept -> mint { return (l.x << r.x) % Mod; }
-        friend constexpr auto operator>>(mint const& l, mint const& r) noexcept -> mint { return (l.x >> r.x) % Mod; }
-        friend constexpr auto operator|(mint const& l, mint const& r) noexcept -> mint { return l.x | r.x; }
-        friend constexpr auto operator&(mint const& l, mint const& r) noexcept -> mint { return l.x & r.x; }
-        constexpr auto operator~() const noexcept -> mint { return ~x % Mod; }
+        friend constexpr auto operator+(mint const& l, mint const& r) noexcept -> mint { return mint { l.x + r.x }; }
+        friend constexpr auto operator-(mint const& l, mint const& r) noexcept -> mint { return mint { l.x - r.x + (l.x < r.x ? Mod : 0) }; }
+        friend constexpr auto operator*(mint const& l, mint const& r) noexcept -> mint { return mint { l.x * r.x }; }
+        friend constexpr auto operator/(mint const& l, mint const& r) noexcept -> mint { return l * math::binary_expo(r, Mod - 2); }
+        friend constexpr auto operator%(mint const& l, mint const& r) noexcept -> mint = delete;
+        friend constexpr auto operator<<(mint const& l, mint const& r) noexcept -> mint { return mint { l.x << r.x }; }
+        friend constexpr auto operator>>(mint const& l, mint const& r) noexcept -> mint { return mint { l.x >> r.x }; }
+        friend constexpr auto operator|(mint const& l, mint const& r) noexcept -> mint { return mint { l.x | r.x }; }
+        friend constexpr auto operator&(mint const& l, mint const& r) noexcept -> mint { return mint { l.x & r.x }; }
+        constexpr auto operator~() const noexcept -> mint { return mint { ~x }; }
         constexpr auto operator+=(mint const& o) noexcept -> mint& { return *this = *this + o; }
         constexpr auto operator-=(mint const& o) noexcept -> mint& { return *this = *this - o; }
         constexpr auto operator*=(mint const& o) noexcept -> mint& { return *this = *this * o; }
@@ -272,11 +272,15 @@ namespace ds {
         constexpr auto operator>>=(mint const& o) noexcept -> mint { return *this = *this >> o; }
         constexpr auto operator|=(mint const& o) noexcept -> mint { return *this = *this | o; }
         constexpr auto operator&=(mint const& o) noexcept -> mint { return *this = *this & o; }
-        constexpr auto operator++() noexcept -> mint& { return *this += 1; }
+        constexpr auto operator++() noexcept -> mint&
+        {
+            ++x;
+            return *this;
+        }
         constexpr auto operator++(int) noexcept -> mint
         {
-            auto temp  = *this;
-            *this     += 1;
+            auto temp = *this;
+            ++x;
             return temp;
         }
         constexpr auto operator==(mint const& other) const noexcept -> bool { return x == other.x; };
@@ -286,11 +290,13 @@ namespace ds {
         constexpr auto operator<=(mint const& other) const noexcept -> bool { return !(*this > other); }
         constexpr auto operator>=(mint const& other) const noexcept -> bool { return !(*this < other); }
         constexpr auto operator!() const noexcept -> bool { return !x; }
-        constexpr explicit operator int() const noexcept { return x; }
-        constexpr auto value() const noexcept -> i64 { return x; }
+        template <typename T, typename = std::enable_if_t<utils::is_integer_v<T>>>
+        constexpr explicit operator T() const noexcept { return static_cast<T>(x); }
+        constexpr auto zero() const noexcept -> bool { return x == 0; }
+        constexpr auto value() const noexcept -> isize { return x; }
 
     private:
-        i64 x {};
+        isize x {};
     };
     struct dsu {
         dsu(usize n)
