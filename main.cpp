@@ -83,7 +83,7 @@ namespace utils {
         auto is_scannable_helper(int) -> decltype(io::serializer<T>::read(
                                                       std::declval<io::reader&>(),
                                                       std::declval<T&>(),
-                                                      std::declval<std::decay_t<Args>>()...),
+                                                      std::declval<std::forward<Args>>()...),
                                                   std::true_type {});
         template <typename>
         auto is_scannable_helper(...) -> std::false_type;
@@ -91,7 +91,7 @@ namespace utils {
         auto is_printable_helper(int) -> decltype(io::serializer<T>::write(
                                                       std::declval<io::writer&>(),
                                                       std::declval<T const&>(),
-                                                      std::declval<std::decay_t<Args>>()...),
+                                                      std::declval<std::forward<Args>>()...),
                                                   std::true_type {});
         template <typename>
         auto is_printable_helper(...) -> std::false_type;
