@@ -119,11 +119,11 @@ namespace io {
         void m_refill()
         {
             m_read = 0;
-            m_is.read(m_buffer, Capacity);
+            m_is.read(m_buffer.data(), Capacity);
             m_count = m_is.gcount();
         }
         std::istream& m_is;
-        char m_buffer[Capacity] {};
+        std::array<char, Capacity> m_buffer {};
         usize m_read {};
         usize m_count {};
     };
@@ -142,7 +142,7 @@ namespace io {
                 m_os.write(src, size);
                 return;
             }
-            std::copy_n(src, size, m_buffer + m_size);
+            std::copy_n(src, size, m_buffer.data() + m_size);
             m_size += size;
         }
         ~output_buffer()
@@ -153,11 +153,11 @@ namespace io {
     private:
         void m_flush()
         {
-            m_os.write(m_buffer, m_size);
+            m_os.write(m_buffer.data(), m_size);
             m_size = 0;
         }
         std::ostream& m_os;
-        char m_buffer[Capacity] {};
+        std::array<char, Capacity> m_buffer {};
         usize m_size {};
     };
     template <>
@@ -184,7 +184,7 @@ namespace io {
     };
     template <typename T>
     struct serializer<T, std::enable_if_t<std::is_floating_point_v<T>>> {
-        inline static char digits[128] {};
+        inline static std::array<char, 128> digits {};
         static void read(reader&, T&);
         static void write(writer&, T const&);
     };
@@ -192,6 +192,11 @@ namespace io {
     struct serializer<char[N]> {
         static void read(reader&, char (&)[N]);
         static void write(writer&, char const (&)[N]);
+    };
+    template <usize N>
+    struct serializer<std::array<char, N>> {
+        static void read(reader&, std::array<char, N>&);
+        static void write(writer&, std::array<char, N> const&);
     };
     template <>
     struct serializer<std::string> {
@@ -201,6 +206,7 @@ namespace io {
     };
     template <>
     struct serializer<std::string_view> {
+        static void read(reader&, std::string_view&) = delete;
         static void write(writer&, std::string_view const&);
     };
     template <typename T>
@@ -216,33 +222,28 @@ namespace algo {
     auto cond_binary_search(T, T, Cond&&) -> T;
 }
 namespace math {
-    using utils::is_integer_v;
-    template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
+    template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
     constexpr auto binary_expo(T, unsigned long long) -> T;
-    template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
+    template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
     constexpr auto binomial_coeff(T, T) -> T;
-    template <typename T, typename = std::enable_if_t<is_integer_v<T>>> // use tgamma for floating points
+    template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>> // use tgamma for floating points
     constexpr auto factorial(T) noexcept -> T;
-    template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
+    template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
     constexpr auto is_prime(T) -> bool;
-    template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
+    template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
     constexpr auto floor(T, T) -> T;
-    template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
+    template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
     constexpr auto ceil(T, T) -> T;
-    template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
+    template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
     constexpr auto sqr(T) -> T;
-    template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
+    template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
     constexpr auto isqrt(T) -> T;
-    template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
-    constexpr auto lclamp(T, T) -> T;
-    template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
-    constexpr auto uclamp(T, T) -> T;
-    template <typename T, typename = std::enable_if_t<is_integer_v<T>>>
+    template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
     auto divisors(T) -> std::vector<T>;
     template <typename T>
-    constexpr auto nmax = std::numeric_limits<T>::max();
+    constexpr auto nmax_v = std::numeric_limits<T>::max();
     template <typename T>
-    constexpr auto nmin = std::is_floating_point_v<T> ? std::numeric_limits<T>::lowest() : std::numeric_limits<T>::min();
+    constexpr auto nmin_v = std::is_floating_point_v<T> ? std::numeric_limits<T>::lowest() : std::numeric_limits<T>::min();
 }
 namespace ds {
     template <i64 Mod>
@@ -418,7 +419,7 @@ namespace algo {
     auto cond_binary_search(T begin, T end, Cond&& cond) -> T
     {
         static_assert(std::is_invocable_r_v<T, Cond, T>, "Wrong function signature type");
-        if constexpr (utils::is_integer_v<T>) {
+        if constexpr (std::is_integral_v<T>) {
             return detail::cond_binary_search_integer_range(begin, end, std::forward<Cond>(cond));
         } else if constexpr (utils::is_iterator_like_v<T>) {
             return detail::cond_binary_search_iterator_range(begin, end, std::forward<Cond>(cond));
@@ -497,7 +498,7 @@ namespace math {
             return x;
         }
         T mi = T { 1 };
-        T ma = nmax<T>();
+        T ma = x;
         while (mi < ma) {
             T mid = std::midpoint(mi, ma);
             if (mid <= x / mid) {
@@ -507,12 +508,8 @@ namespace math {
             }
         }
         // mi > x (can be proved)
-        return mi--;
+        return --mi;
     }
-    template <typename T, typename>
-    constexpr auto lclamp(T x, T l) -> T { return std::clamp(x, l, nmax<T>()); }
-    template <typename T, typename>
-    constexpr auto uclamp(T x, T u) -> T { return std::clamp(x, nmin<T>(), u); }
     template <typename T, typename>
     auto divisors(T x) -> std::vector<T>
     {
@@ -545,21 +542,30 @@ namespace io {
         // false when eof or newline is encountered
         // Reads upto N - 1 characters and puts a null at the end
         template <usize N>
-        auto readln(char (&line)[N]) -> bool
+        [[nodiscard]] auto readln(std::array<char, N>& line) -> bool
         {
-            char* ptr           = line;
-            bool has_more_chars = serializer<void>::next_token(m_buffer, ptr, N - 1, [](char c) { return c == '\r' || c == '\n'; });
+            return readln(line, [](char c) { return c == '\r' || c == '\n'; });
+        }
+        template <usize N, typename DelimeterCallback>
+        [[nodiscard]] auto readln(std::array<char, N>& line, DelimeterCallback&& delim_fn) -> bool
+        {
+            char* ptr           = line.data();
+            bool has_more_chars = serializer<void>::next_token(m_buffer, ptr, N - 1, std::forward<DelimeterCallback>(delim_fn));
             *ptr                = 0;
             return has_more_chars;
         }
         void readln(std::string& line)
         {
+            readln(line, [](char c) { return c == '\r' || c == '\n'; });
+        }
+        template <typename DelimeterCallback>
+        void readln(std::string& line, DelimeterCallback&& delim_fn)
+        {
             line.clear();
             line.resize(16);
 
             char* ptr = line.data();
-            while (serializer<void>::next_token(m_buffer, ptr, line.size() / 2,
-                                                [](char c) { return c == '\r' || c == '\n'; })) {
+            while (serializer<void>::next_token(m_buffer, ptr, line.size(), delim_fn)) {
                 line.resize(line.size() * 2);
                 ptr = line.data() + line.size() / 2;
             }
@@ -638,9 +644,9 @@ namespace io {
     {
         char* first;
         while (true) {
-            first = std::find_if_not(buffer.m_buffer + buffer.m_read, buffer.m_buffer + buffer.m_count, f);
-            if (first != buffer.m_buffer + buffer.m_count) {
-                buffer.m_read += std::distance(buffer.m_buffer + buffer.m_read, first);
+            first = std::find_if_not(buffer.m_buffer.data() + buffer.m_read, buffer.m_buffer.data() + buffer.m_count, f);
+            if (first != buffer.m_buffer.data() + buffer.m_count) {
+                buffer.m_read += std::distance(buffer.m_buffer.data() + buffer.m_read, first);
                 break;
             }
             buffer.m_refill();
@@ -648,7 +654,7 @@ namespace io {
                 return false;
             }
         }
-        char* last     = std::find_if(first, buffer.m_buffer + buffer.m_count, f);
+        char* last      = std::find_if(first, buffer.m_buffer.data() + buffer.m_count, f);
         auto count     = std::min<usize>(last - first, capacity);
         dest           = std::copy_n(first, count, dest);
         buffer.m_read += count;
@@ -671,7 +677,7 @@ namespace io {
     void serializer<char>::read(reader& r, char& c)
     {
         char* ptr = &c;
-        serializer<void>::next_token(r.get_buffer(), ptr, 1);
+        serializer<void>::next_token(r.get_buffer(), ptr, 1, [](char) { return false; });
     }
     void serializer<char>::write(writer& w, char const& c) { w.get_buffer().write(&c, 1); }
     template <typename T>
@@ -696,8 +702,8 @@ namespace io {
     void serializer<T, std::enable_if_t<std::is_floating_point_v<T>>>::read(reader& r, T& value)
     {
         auto& buffer = r.get_buffer();
-        char* ptr    = digits;
-        while (serializer<void>::next_token(buffer, ptr, sizeof(digits) - (ptr - digits))) { }
+        char* ptr    = digits.data();
+        while (serializer<void>::next_token(buffer, ptr, digits.size() - (ptr - digits.data()))) { }
 
         auto [_, ec] = std::from_chars(digits, ptr, value, r.get_float_parse_fmt());
         if (ec != std::errc {}) {
@@ -707,7 +713,7 @@ namespace io {
     template <typename T>
     void serializer<T, std::enable_if_t<std::is_floating_point_v<T>>>::write(writer& w, T const& value)
     {
-        auto [ptr, _] = std::to_chars(digits, digits + sizeof(digits), value, w.get_float_print_fmt(), w.get_float_precision());
+        auto [ptr, _] = std::to_chars(digits.data(), digits.data() + digits.size(), value, w.get_float_print_fmt(), w.get_float_precision());
         w.get_buffer().write(digits, ptr - digits);
     }
     template <usize N>
@@ -715,13 +721,24 @@ namespace io {
     {
         static_assert(N > 1, "not enough buffer space. Expect size for at least 2 chars including null");
         char* ptr = value;
-        serializer<void>::next_token(r.get_buffer(), ptr, N - 1, [](char) { return true; });
+        serializer<void>::next_token(r.get_buffer(), ptr, N - 1, [](char) { return false; });
         *ptr = 0;
     }
     template <usize N>
     void serializer<char[N]>::write(writer& w, char const (&value)[N]) { w.get_buffer().write(value, strnlen(value, N)); }
+    template <usize N>
+    void serializer<std::array<char, N>>::read(reader& r, std::array<char, N>& value)
+    {
+        static_assert(N > 1, "not enough buffer space. Expect size for at least 2 chars including null");
+        char* ptr = value.data();
+        serializer<void>::next_token(r.get_buffer(), ptr, N - 1, [](char) { return false; });
+        *ptr = 0;
+    }
+    template <usize N>
+    void serializer<std::array<char, N>>::write(writer& w, std::array<char, N> const& value) { w.get_buffer().write(value.data(), strnlen(value.data(), N)); }
     void serializer<std::string>::read(reader& r, std::string& value)
     {
+        value.clear();
         auto& buffer = r.get_buffer();
         char* ptr = buf;
         while (serializer<void>::next_token(buffer, ptr, sizeof(buf))) {
@@ -771,11 +788,8 @@ using math::factorial;
 using math::floor;
 using math::is_prime;
 using math::isqrt;
-using math::lclamp;
-using math::nmax;
-using math::nmin;
-using math::sqr;
-using math::uclamp;
+using math::nmax_v;
+using math::nmin_v;
 using str::split;
 using str::strip;
 using namespace std;
@@ -794,11 +808,5 @@ int main()
 
     int T;
     for (read(T); T--;) {
-        i32 n;
-        read(n);
-        vector<i32> p(n);
-        read(p);
-
-        writeln(p);
     }
 }
