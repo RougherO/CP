@@ -1,0 +1,33 @@
+# API reference for cp. Generate with: doxygen   (output: build/docs/html/index.html)
+PROJECT_NAME           = cp
+PROJECT_BRIEF          = "Header-only competitive-programming library, C++17 to C++26"
+OUTPUT_DIRECTORY       = build/docs
+INPUT                  = include
+FILE_PATTERNS          = *.hpp
+RECURSIVE              = YES
+STRIP_FROM_PATH        = include
+STRIP_FROM_INC_PATH    = include
+FULL_PATH_NAMES        = YES
+JAVADOC_AUTOBRIEF      = NO
+EXTRACT_ALL            = NO
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = YES
+# cp::detail is documented on purpose: it is the reference for people extending cp.
+EXCLUDE_SYMBOLS        =
+SORT_MEMBER_DOCS       = NO
+WARN_IF_UNDOCUMENTED   = YES
+WARN_NO_PARAMDOC       = NO
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+GENERATE_TREEVIEW      = YES
+SOURCE_BROWSER         = YES
+HAVE_DOT               = NO
+# Document the C++17 view of the library: the __cpp_lib_* macros stay undefined, so the
+# documented backports are what Doxygen parses rather than the `using std::x;` branches.
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = NO
+SEARCH_INCLUDES        = YES
+INCLUDE_PATH           = include
+PREDEFINED             = __GNUC__=13 __x86_64__=1 __linux__=1 __cplusplus=201703L \
+                         __SIZEOF_INT128__=16 "__has_include(x)=0" "__has_builtin(x)=0"

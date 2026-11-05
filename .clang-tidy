@@ -1,17 +1,67 @@
-Checks: clang-analyzer-*, clang-*,
-        performance-*,
-        bugprone-*,
-        -bugprone-narrowing-conversions,
-        -bugprone-reserved-identifier,
-        -bugprone-standalone-empty,
-        -bugprone-stringview-nullptr,
-        -bugprone-easily-swappable-parameters,
-        -performance-avoid-endl,
-        # concurrency-*,
-        # portability-*,
-        # readability-*, -readability-identifier-length, -readability-magic-numbers, -readability-implicit-bool-conversion,
-        # boost-*
+# Bug-finding checks plus the project's naming rules.
+# Modernize checks that suggest C++20-only rewrites are off: the library must stay valid C++17
+# (newer facilities come in through `#if __cpp_lib_*`, never unconditionally).
+# bugprone-signed-bitwise is off: it reports every `x << n` with an `int` count, the standard's own convention.
+Checks: >
+  bugprone-*,
+  clang-analyzer-*,
+  performance-*,
+  modernize-*,
+  readability-identifier-naming,
+  readability-redundant-*,
+  readability-misleading-indentation,
+  readability-container-size-empty,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-signed-bitwise,
+  -bugprone-narrowing-conversions,
+  -bugprone-reserved-identifier,
+  -bugprone-macro-parentheses,
+  -bugprone-exception-escape,
+  -performance-avoid-endl,
+  -modernize-avoid-c-arrays,
+  -modernize-use-trailing-return-type,
+  -modernize-use-nodiscard,
+  -modernize-use-constraints,
+  -modernize-use-ranges,
+  -modernize-use-integer-sign-comparison,
+  -modernize-use-starts-ends-with,
+  -modernize-use-std-format,
+  -modernize-use-std-print,
+  -modernize-use-std-numbers,
+  -modernize-use-designated-initializers,
+  -modernize-macro-to-enum,
+  -readability-redundant-typename
 
 WarningsAsErrors: ''
-HeaderFilterRegex: ''
-FormatStyle: "file"
+HeaderFilterRegex: '.*/include/cp/.*'
+FormatStyle: file
+
+CheckOptions:
+  # snake_case everywhere, std-library style
+  readability-identifier-naming.NamespaceCase: lower_case
+  readability-identifier-naming.ClassCase: lower_case
+  readability-identifier-naming.StructCase: lower_case
+  readability-identifier-naming.UnionCase: lower_case
+  readability-identifier-naming.EnumCase: lower_case
+  readability-identifier-naming.EnumConstantCase: lower_case
+  readability-identifier-naming.TypeAliasCase: lower_case
+  readability-identifier-naming.TypedefCase: lower_case
+  # a single capital letter mirrors a template parameter: using T = TestType;
+  readability-identifier-naming.TypeAliasIgnoredRegexp: '^[A-Z]$'
+  readability-identifier-naming.FunctionCase: lower_case
+  readability-identifier-naming.MethodCase: lower_case
+  readability-identifier-naming.VariableCase: lower_case
+  readability-identifier-naming.ParameterCase: lower_case
+  readability-identifier-naming.PublicMemberCase: lower_case
+  # private/protected data members: m_ prefix
+  readability-identifier-naming.PrivateMemberCase: lower_case
+  readability-identifier-naming.PrivateMemberPrefix: m_
+  readability-identifier-naming.ProtectedMemberCase: lower_case
+  readability-identifier-naming.ProtectedMemberPrefix: m_
+  # template parameters: PascalCase (T, Extent, Sentinel)
+  readability-identifier-naming.TemplateParameterCase: CamelCase
+  readability-identifier-naming.TypeTemplateParameterCase: CamelCase
+  readability-identifier-naming.ValueTemplateParameterCase: CamelCase
+  readability-identifier-naming.TemplateTemplateParameterCase: CamelCase
+  # macros: CP_ upper case
+  readability-identifier-naming.MacroDefinitionCase: UPPER_CASE

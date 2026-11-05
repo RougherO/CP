@@ -2,12 +2,34 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(lldb) Launch",
+            // Debug build of main.cpp (xmake's default mode).
+            "name": "(lldb) main",
             "type": "lldb",
             "request": "launch",
-            "program": "${command:cmake.getLaunchTargetPath}",
+            "program": "${workspaceFolder}/build/linux/x86_64/debug/main",
             "args": [],
+            "stdio": [
+                // "${workspaceFolder}/input.txt",
+            ],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "xmake: build main"
+        },
+        {
+            // Debug one test binary; pick it from the list.
+            "name": "(lldb) test",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/linux/x86_64/debug/${input:test}",
+            "args": ["--break"],
             "cwd": "${workspaceFolder}"
+        }
+    ],
+    "inputs": [
+        {
+            "id": "test",
+            "type": "pickString",
+            "description": "Test binary",
+            "options": ["test_arith", "test_bit", "test_both_namespaces", "test_cpu", "test_inplace_vector", "test_int128", "test_span_ranges", "test_wide"]
         }
     ]
 }

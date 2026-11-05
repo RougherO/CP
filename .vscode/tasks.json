@@ -1,0 +1,51 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "xmake: build main",
+            "type": "shell",
+            "command": "xmake build main",
+            "group": { "kind": "build", "isDefault": true },
+            "problemMatcher": "$gcc"
+        },
+        {
+            "label": "xmake: run main",
+            "type": "shell",
+            "command": "xmake run main",
+            "dependsOn": "xmake: build main",
+            "problemMatcher": []
+        },
+        {
+            "label": "xmake: configure tests",
+            "type": "shell",
+            "command": "xmake f -y --tests=y",
+            "problemMatcher": []
+        },
+        {
+            "label": "xmake: test",
+            "type": "shell",
+            "command": "xmake test",
+            "group": { "kind": "test", "isDefault": true },
+            "problemMatcher": "$gcc"
+        },
+        {
+            "label": "xmake: test matrix (gcc/clang x c++17..26)",
+            "type": "shell",
+            "command": "xmake matrix",
+            "group": "test",
+            "problemMatcher": "$gcc"
+        },
+        {
+            "label": "xmake: benchmarks (release)",
+            "type": "shell",
+            "command": "xmake bench",
+            "problemMatcher": "$gcc"
+        },
+        {
+            "label": "clang-tidy: current file",
+            "type": "shell",
+            "command": "clang-tidy -p build ${file}",
+            "problemMatcher": "$gcc"
+        }
+    ]
+}

@@ -1,5 +1,25 @@
-If:
-  PathMatch: .*.[ch](pp)?
-  PathExclude: (build|submodules)/.*
+# clangd reads build/compile_commands.json, which every `xmake` build refreshes.
+# Headers get the flags of the generated per-header units (the `headers` target).
 CompileFlags:
   CompilationDatabase: build
+
+Diagnostics:
+  # clang-tidy runs from the .clang-tidy files (clangd is started with --clang-tidy).
+  UnusedIncludes: Strict
+  Includes:
+    # Included for their feature-test macros, which include-cleaner cannot see being used.
+    IgnoreHeader:
+      - cp/compat/version\.hpp
+      - cp/config\.hpp
+      - version
+
+Index:
+  Background: Build
+
+InlayHints:
+  Enabled: true
+  ParameterNames: true
+  DeducedTypes: true
+
+Hover:
+  ShowAKA: true
