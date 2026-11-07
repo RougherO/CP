@@ -11,6 +11,8 @@ task("docs")
     on_run(function ()
         import("core.base.option")
         import("lib.detect.find_program")
+        import("report")
+        report.start("docs")
         local root  = os.projectdir()
         local pages = table.join({path.join(root, "README.md")}, os.files(path.join(root, "docs", "guide", "*.md")))
         local stale = {}
@@ -33,15 +35,17 @@ task("docs")
         end
         if option.get("check") then
             if #stale > 0 then raise("docs: examples out of sync in %s (run xmake docs)", table.concat(stale, ", ")) end
-            print("docs: every example block matches its file")
+            report.info("every example block matches its file")
+            report.done()
             return
         end
-        for _, page in ipairs(stale) do print("docs: synced examples into %s", page) end
+        for _, page in ipairs(stale) do report.info("synced examples into %s", page) end
         local doxygen = find_program("doxygen")
         if not doxygen then raise("docs: needs doxygen on PATH") end
         os.tryrm(path.join(root, "build", "docs", "html"))
         os.mkdir(path.join(root, "build", "docs"))
         os.execv(doxygen, {"Doxyfile"}, {curdir = root})
-        print("docs: build/docs/html/index.html")
+        report.info("build/docs/html/index.html")
+        report.done()
     end)
 task_end()

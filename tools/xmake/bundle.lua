@@ -17,6 +17,8 @@ task("bundle")
         import("core.base.option")
         import("lib.detect.find_program")
         import("bundler")
+        import("report")
+        report.start("bundle")
 
         local limit = 65535  -- bytes a judge accepts (Codeforces: 64 KiB)
         local profiles = {
@@ -68,10 +70,10 @@ task("bundle")
                 end
                 table.insert(candidates, {text = shaken, what = "shaken", note = why})
             else
-                print("bundle: warning: no tree-shaking (%s)", why)
+                report.warning("no tree-shaking (%s)", why)
             end
         else
-            print("bundle: warning: no tree-shaking (clang++ not found)")
+            report.warning("no tree-shaking (clang++ not found)")
         end
         table.insert(candidates, {text = full, what = "unshaken"})
 
@@ -79,7 +81,7 @@ task("bundle")
         if sample then
             ctx.sample = path.absolute(sample, root)
             if profile.runner and not ctx.runner then
-                print("bundle: --sample skipped: running a %s program needs %s", name, profile.runner)
+                report.warning("--sample skipped: running a %s program needs %s", name, profile.runner)
             else
                 ctx.reference = bundler.reference(input, include, ctx)
             end
@@ -96,23 +98,24 @@ task("bundle")
             local kept_as = path.join(path.directory(output), "failed-" .. c.what:gsub("%s", "-") .. ".cpp")
             io.writefile(kept_as, candidate, {encoding = "binary"})
             if last then raise("bundle: the bundle %s (kept as %s)", why, path.relative(kept_as, root)) end
-            print("bundle: warning: the %s bundle %s (kept as %s); trying it %s", c.what, why,
+            report.warning("the %s bundle %s (kept as %s); trying it %s", c.what, why,
                   path.relative(kept_as, root), candidates[i + 1].what)
         end
         os.tryrm(ctx.tmp)
 
-        print("%s: %d bytes, %d headers inlined, profile %s, %s, checks %s, %s%s; compiles%s",
+        report.info("%s: %d bytes, %d headers inlined, profile %s, %s, checks %s, %s%s; compiles%s",
               path.relative(output, root), #text, count, name, option.get("std"), checks == "1" and "on" or "off",
               chosen.what, chosen.note and (" (" .. chosen.note .. ")") or "",
               ctx.reference and ", same output and exit code as unbundled" or "")
         if #text > limit then
             if kept and chosen.what ~= "unshaken" then
-                print("largest kept declarations:")
+                report.info("largest kept declarations:")
                 for i = 1, math.min(10, #kept) do print("  %6d  %s", kept[i].size, kept[i].name) end
             end
             raise("bundle: %d bytes is over the %d-byte limit (%s not written)", #text, limit,
                   path.relative(output, root))
         end
         io.writefile(output, text, {encoding = "binary"})
+        report.done()
     end)
 task_end()

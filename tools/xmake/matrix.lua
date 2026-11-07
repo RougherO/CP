@@ -16,6 +16,8 @@ task("matrix")
         import("lib.detect.find_program")
         import("isolated_build")
         import("async.runjobs")
+        import("report")
+        report.start("matrix")
         local examples = os.files(path.join(os.projectdir(), "examples", "*.cpp"))
         -- Bundles every example for `toolchain` at `std` in parallel; the first failure's message, or nil.
         local function bundle_examples(toolchain, std, dir)
@@ -48,6 +50,7 @@ task("matrix")
                 local windows = toolchain == "mingw"
                 local runs    = not windows or is_host("windows") or wine
                 local err
+                local started = os.mclock()
                 try {
                     function ()
                         local config = {"-m", "debug", "--cxxstd=" .. std, "--tests=y"}
@@ -61,16 +64,18 @@ task("matrix")
                     end,
                     catch { function (e) err = table.concat(table.slice(tostring(e):split("\n"), 1, 20), "\n    ") end }
                 }
+                local spent = string.format(" (%.1fs)", report.seconds(started))
                 if err then
-                    table.insert(results, "FAIL " .. name .. ": " .. err)
+                    table.insert(results, {false, name .. spent .. ": " .. err})
                     failed = failed + 1
                 else
-                    table.insert(results, "PASS " .. name .. (runs and "" or " (built; no wine)"))
+                    table.insert(results, {true, name .. spent .. (runs and "" or ", built only: no wine")})
                 end
             end
         end
         print("")
-        for _, line in ipairs(results) do print(line) end
-        if failed > 0 then raise("%d of %d cells failed", failed, #results) end
+        for _, r in ipairs(results) do report.check(r[1], "%s", r[2]) end
+        if failed > 0 then raise("matrix: %d of %d cells failed", failed, #results) end
+        report.done()
     end)
 task_end()

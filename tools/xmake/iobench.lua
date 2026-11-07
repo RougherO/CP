@@ -16,6 +16,8 @@ task("iobench")
     on_run(function ()
         import("core.base.option")
         import("isolated_build")
+        import("report")
+        report.start("iobench")
         local toolchain = option.get("toolchain")
         local count = option.get("count")
         local runs = tonumber(option.get("runs"))
@@ -42,7 +44,7 @@ task("iobench")
             {"write file", function (p) os.execv(p, {"write", count}, {stdout = output}) end},
             {"write pipe", posix and function (p) sh(quote(p) .. " write " .. count .. " | cat > " .. quote(os.nuldev())) end}
         }
-        if not posix then print("iobench: pipe scenarios need a POSIX shell; skipped on this host") end
+        if not posix then report.warning("pipe scenarios need a POSIX shell; skipped on this host") end
 
         local function best(run, prog)
             local t = math.huge
@@ -55,7 +57,7 @@ task("iobench")
         end
 
         local sums, hashes = {}, {}
-        print(string.format("%d numbers, best of %d, %s -O2 (ms)", count, runs, toolchain))
+        report.info("%d numbers, best of %d, %s -O2 (ms)", count, runs, toolchain)
         local header = string.format("%-14s", "")
         for _, s in ipairs(scenarios) do header = header .. string.format("%12s", s[1]) end
         print(header)
@@ -70,11 +72,12 @@ task("iobench")
         end
         for _, c in ipairs(contenders) do
             if sums[c[2]] ~= sums["cp"] or hashes[c[2]] ~= hashes["cp"] then
-                raise("%s disagrees with cp: sum %s vs %s, output %s vs %s", c[2], sums[c[2]], sums["cp"],
+                raise("iobench: %s disagrees with cp: sum %s vs %s, output %s vs %s", c[2], sums[c[2]], sums["cp"],
                       hashes[c[2]], hashes["cp"])
             end
         end
-        print("all contenders read the same sum and wrote the same bytes")
+        report.info("all contenders read the same sum and wrote the same bytes")
         os.rm(output)
+        report.done()
     end)
 task_end()
