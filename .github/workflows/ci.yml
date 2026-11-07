@@ -30,7 +30,7 @@ jobs:
     steps:
       - name: Install the toolchain
         run: |
-          pacman -Syu --noconfirm --needed git base-devel cmake xmake gcc clang lld
+          pacman -Syu --noconfirm --needed git base-devel xmake gcc clang lld
       - uses: actions/checkout@v4
       - name: Versions
         run: |
@@ -41,13 +41,14 @@ jobs:
         with:
           path: ~/.xmake/packages
           key: xmake-packages-${{ matrix.toolchain }}-${{ hashFiles('xmake.lua') }}
-      # xmake asks before installing Catch2; CI answers yes here, the tasks themselves never do.
+      # xmake asks before installing the pinned Catch2 (and CMake to build it); CI answers yes here, the tasks
+      # themselves never do.
       - name: Tests and bundles, C++17/20/23/26
         run: yes | xmake matrix --toolchains=${{ matrix.toolchain }}
 
   # Native Windows: MSYS2 UCRT64 with the packages docs/guide/getting-started.md lists; clang++ is for the bundler's
   # tree-shaking. xmake fetches its package repository with git (MSYS2's own: the runner's Windows git is not on the
-  # MSYS2 PATH) and builds Catch2 with CMake.
+  # MSYS2 PATH).
   windows:
     name: windows (mingw)
     runs-on: windows-latest
@@ -64,7 +65,6 @@ jobs:
             mingw-w64-ucrt-x86_64-gcc
             mingw-w64-ucrt-x86_64-clang
             mingw-w64-ucrt-x86_64-xmake
-            mingw-w64-ucrt-x86_64-cmake
             git
       - name: Versions
         run: |

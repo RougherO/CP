@@ -1,7 +1,12 @@
 # Testing and benchmarks
 
-Catch2 and Google Benchmark come through xmake: an installed copy if there is one; otherwise xmake asks whether
-to download and build it the first time you enable tests or benchmarks.
+Catch2 3.16.1 and Google Benchmark 1.9.5 are pinned in `xmake.lua`, so every machine tests with the same versions.
+xmake uses an installed copy when it is exactly that version; otherwise it asks whether to download (checksum-verified)
+and build it, the first time you enable tests or benchmarks. Change the version in `xmake.lua` to move to another.
+
+Google Benchmark is pinned one release back: 1.9.5 is the newest xmake's package repository has. The speed table
+in [num](num.md#modular-integers) was measured with 1.10.0 (Arch's package) before the pin; the library only times
+the code, so those numbers stay comparable.
 
 | Command | What it does |
 |---|---|

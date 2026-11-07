@@ -83,7 +83,7 @@ target("main")
 target_end()
 
 if has_config("tests") then
-    add_requires("catch2 3.x")
+    add_requires("catch2 3.16.1")  -- pinned: a system copy of exactly this version, else xrepo builds it
 
     -- Library code is held to the strict set; Catch2's own headers are system headers.
     local function strict(target_name, body)
@@ -140,7 +140,7 @@ end
 
 -- `xmake bench` runs bench/bench_*.cpp (Google Benchmark); `xmake iobench` races bench/io/io_*.cpp. Release builds.
 if has_config("bench") then
-    add_requires("benchmark")
+    add_requires("benchmark 1.9.5")  -- pinned like Catch2; the newest xrepo has
     for _, set in ipairs({{"bench/bench_*.cpp", "bench", "benchmark"}, {"bench/io/io_*.cpp", "iobench"}}) do
         for _, file in ipairs(os.files(set[1])) do
             target(path.basename(file))

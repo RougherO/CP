@@ -116,7 +116,7 @@ operator: they mean nothing modulo M.
 - `dyn_modint` starts at 998244353. Set the modulus before making values: a value made earlier keeps its old
   residue.
 
-Multiplications per second (`xmake bench`, GCC -O2, Intel i5-12600K):
+Multiplications per second (`xmake bench`, GCC -O2, Intel i5-12600K, Google Benchmark 1.10.0):
 
 | | independent | each waits for the previous |
 |---|---|---|
