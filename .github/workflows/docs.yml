@@ -1,0 +1,51 @@
+# Builds the documentation site (xmake docs) and publishes it to GitHub Pages.
+name: docs
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Doxygen
+        env:
+          # TODO(owner): the SHA-256 of doxygen-1.12.0.linux.bin.tar.gz from the release page; empty skips the check.
+          DOXYGEN_SHA256: ""
+        run: |
+          curl -fsSLo doxygen.tar.gz https://github.com/doxygen/doxygen/releases/download/Release_1_12_0/doxygen-1.12.0.linux.bin.tar.gz
+          if [ -n "$DOXYGEN_SHA256" ]; then echo "$DOXYGEN_SHA256  doxygen.tar.gz" | sha256sum -c -; else echo "::warning::Doxygen download not verified: DOXYGEN_SHA256 is unset"; fi
+          tar xzf doxygen.tar.gz
+          echo "$PWD/doxygen-1.12.0/bin" >> "$GITHUB_PATH"
+      - uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: "3.0.0"  # set_xmakever in xmake.lua
+      - name: Check the examples in the guide
+        run: xmake docs --check
+      - name: Build the site
+        run: xmake docs
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/docs/html
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

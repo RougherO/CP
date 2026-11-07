@@ -1,11 +1,31 @@
-# API reference for cp. Generate with: doxygen   (output: build/docs/html/index.html)
+# The documentation site: README, the guide and the API reference. Build with `xmake docs` (build/docs/html).
 PROJECT_NAME           = cp
 PROJECT_BRIEF          = "Header-only competitive-programming library, C++17 to C++26"
 OUTPUT_DIRECTORY       = build/docs
-INPUT                  = include
-FILE_PATTERNS          = *.hpp
+# Pages in reading order; docs/guide/SUMMARY.md is GitBook's table of contents (the sidebar replaces it).
+INPUT                  = README.md \
+                         docs/guide/getting-started.md \
+                         docs/guide/io.md \
+                         docs/guide/debugging.md \
+                         docs/guide/num.md \
+                         docs/guide/bits.md \
+                         docs/guide/ds.md \
+                         docs/guide/views.md \
+                         docs/guide/util.md \
+                         docs/guide/traits.md \
+                         docs/guide/sys.md \
+                         docs/guide/aliases.md \
+                         docs/guide/language-levels.md \
+                         docs/guide/bundling.md \
+                         docs/guide/testing.md \
+                         docs/guide/contributing.md \
+                         include
+FILE_PATTERNS          = *.hpp *.md
 RECURSIVE              = YES
-STRIP_FROM_PATH        = include
+USE_MDFILE_AS_MAINPAGE = README.md
+MARKDOWN_ID_STYLE      = GITHUB
+EXAMPLE_PATH           = examples
+STRIP_FROM_PATH        = include .
 STRIP_FROM_INC_PATH    = include
 FULL_PATH_NAMES        = YES
 JAVADOC_AUTOBRIEF      = NO
@@ -15,15 +35,23 @@ EXTRACT_STATIC         = YES
 # cp::detail is documented on purpose: it is the reference for people extending cp.
 EXCLUDE_SYMBOLS        =
 SORT_MEMBER_DOCS       = NO
+# One comment documents a whole ///@{ ... ///@} group (overloads, std-mirroring member lists).
+DISTRIBUTE_GROUP_DOC   = YES
 WARN_IF_UNDOCUMENTED   = YES
 WARN_NO_PARAMDOC       = NO
+WARN_LOGFILE           = build/docs/warnings.txt
 GENERATE_HTML          = YES
 GENERATE_LATEX         = NO
-GENERATE_TREEVIEW      = YES
 SOURCE_BROWSER         = YES
 HAVE_DOT               = NO
-# Document the C++17 view of the library: the __cpp_lib_* macros stay undefined, so the
-# documented backports are what Doxygen parses rather than the `using std::x;` branches.
+# Theme: doxygen-awesome-css v2.3.4 (docs/doxygen, MIT), sidebar layout.
+GENERATE_TREEVIEW      = YES
+DISABLE_INDEX          = NO
+FULL_SIDEBAR           = NO
+HTML_COLORSTYLE        = LIGHT
+HTML_EXTRA_STYLESHEET  = docs/doxygen/doxygen-awesome.css docs/doxygen/doxygen-awesome-sidebar-only.css
+# The C++17 view: the __cpp_lib_* macros stay undefined, so the documented backports are what
+# Doxygen parses rather than the `using std::x;` branches.
 ENABLE_PREPROCESSING   = YES
 MACRO_EXPANSION        = YES
 EXPAND_ONLY_PREDEF     = NO

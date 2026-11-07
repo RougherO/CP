@@ -11,6 +11,9 @@ FixNamespaceComments: true
 IndentPPDirectives: AfterHash
 PPIndentWidth: 2
 
+# Modern syntax everywhere: `>>` closes nested templates (Auto guesses C++03 per file and writes `> >`).
+Standard: Latest
+
 QualifierAlignment: Right
 DerivePointerAlignment: false
 PointerAlignment: Left

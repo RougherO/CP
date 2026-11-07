@@ -13,12 +13,8 @@ task("bench")
     }
     on_run(function ()
         import("core.base.option")
-        local toolchain = option.get("toolchain")
-        local dir = path.join(os.projectdir(), "build", "bench", toolchain)
-        local opt = {envs = {XMAKE_CONFIGDIR = path.join(dir, "config"), CP_MATRIX = "1"}}
-        os.execv(os.programfile(), {"f", "-y", "-q", "-m", "release", "--toolchain=" .. toolchain, "--bench=y",
-                                    "--builddir=" .. dir}, opt)
-        os.execv(os.programfile(), {"build", "-q", "-g", "bench"}, opt)
+        import("isolated_build")
+        local opt = isolated_build.bench(option.get("toolchain"), "bench")
         for _, file in ipairs(os.files(path.join(os.projectdir(), "bench", "bench_*.cpp"))) do
             local args = {"--benchmark_min_warmup_time=0.1"}
             if option.get("filter") then table.insert(args, "--benchmark_filter=" .. option.get("filter")) end

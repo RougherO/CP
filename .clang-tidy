@@ -33,10 +33,13 @@ Checks: >
   -readability-redundant-typename
 
 WarningsAsErrors: ''
-HeaderFilterRegex: '.*/include/cp/.*'
+HeaderFilterRegex: '(.*/)?include/cp/.*'
 FormatStyle: file
 
 CheckOptions:
+  # `cmp(a, b) < 0` compares an ordering with literal 0, which converts to a pointer-typed parameter: not a null
+  # pointer. libstdc++ 16 renamed its type to __literal_zero; cp's C++17 orderings use detail::ordering_zero.
+  modernize-use-nullptr.IgnoredTypes: 'std::_CmpUnspecifiedParam::;^std::__cmp_cat::__unspec;^std::__cmp_cat::__literal_zero;^cp::detail::ordering_zero'
   # snake_case everywhere, std-library style
   readability-identifier-naming.NamespaceCase: lower_case
   readability-identifier-naming.ClassCase: lower_case
@@ -58,6 +61,11 @@ CheckOptions:
   readability-identifier-naming.PrivateMemberPrefix: m_
   readability-identifier-naming.ProtectedMemberCase: lower_case
   readability-identifier-naming.ProtectedMemberPrefix: m_
+  # private/protected member functions: m_ prefix too [owner, 2026-11-07]
+  readability-identifier-naming.PrivateMethodCase: lower_case
+  readability-identifier-naming.PrivateMethodPrefix: m_
+  readability-identifier-naming.ProtectedMethodCase: lower_case
+  readability-identifier-naming.ProtectedMethodPrefix: m_
   # template parameters: PascalCase (T, Extent, Sentinel)
   readability-identifier-naming.TemplateParameterCase: CamelCase
   readability-identifier-naming.TypeTemplateParameterCase: CamelCase
