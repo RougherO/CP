@@ -94,7 +94,7 @@ task("bundle")
             end
             local last = i == #candidates
             local kept_as = path.join(path.directory(output), "failed-" .. c.what:gsub("%s", "-") .. ".cpp")
-            io.writefile(kept_as, candidate)
+            io.writefile(kept_as, candidate, {encoding = "binary"})
             if last then raise("bundle: the bundle %s (kept as %s)", why, path.relative(kept_as, root)) end
             print("bundle: warning: the %s bundle %s (kept as %s); trying it %s", c.what, why,
                   path.relative(kept_as, root), candidates[i + 1].what)
@@ -113,6 +113,6 @@ task("bundle")
             raise("bundle: %d bytes is over the %d-byte limit (%s not written)", #text, limit,
                   path.relative(output, root))
         end
-        io.writefile(output, text)
+        io.writefile(output, text, {encoding = "binary"})
     end)
 task_end()

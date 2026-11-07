@@ -1,6 +1,9 @@
 -- The stages of `xmake bundle` (tools/xmake/bundle.lua): inline, resolve, strip, shake, prune, verify.
 import("core.base.json")
 
+-- Files are read and written byte for byte: on Windows, text mode turns "\n" into "\r\n", which shifts clang's offsets.
+local as_bytes = {encoding = "binary"}
+
 -- The first `n` lines of `text`.
 local function first_lines(text, n)
     local lines = tostring(text or ""):split("\n")
@@ -23,7 +26,7 @@ function inline(input, include)
     local settled, guards, count = {}, {}, 0
     local raw, masked, cut = {}, {}, 0
     local function emit(file, is_cp, depth)
-        for _, line in ipairs(io.readfile(file):split("\n", {strict = true})) do
+        for _, line in ipairs(io.readfile(file, as_bytes):split("\n", {strict = true})) do
             local directive = line:match("^%s*#%s*(%a+)")
             local header    = directive == "include" and line:match('^%s*#%s*include%s*"(cp/[^"]+)"')
             if directive and directive:startswith("if") then
@@ -73,8 +76,8 @@ end
 -- Returns it and the set of macros the standard library defines (step 3 drops their #defines).
 function resolve(head, ctx)
     local version, empty = path.join(ctx.tmp, "version.cpp"), path.join(ctx.tmp, "empty.cpp")
-    io.writefile(version, "#include <version>\n")
-    io.writefile(empty, "\n")
+    io.writefile(version, "#include <version>\n", as_bytes)
+    io.writefile(empty, "\n", as_bytes)
     local predefined, with_library = macros(ctx.cxx, ctx.std, empty), macros(ctx.cxx, ctx.std, version)
     if not predefined[ctx.profile.os] then
         raise("bundle: %s does not target the %s profile's system (no %s)", ctx.cxx, ctx.name, ctx.profile.os)
@@ -84,8 +87,8 @@ function resolve(head, ctx)
         if not predefined[n] then table.insert(library, line) end
     end
     local library_h, source = path.join(ctx.tmp, "library.h"), path.join(ctx.tmp, "head.cpp")
-    io.writefile(library_h, table.concat(library, "\n") .. "\n")
-    io.writefile(source, head .. "\n")
+    io.writefile(library_h, table.concat(library, "\n") .. "\n", as_bytes)
+    io.writefile(source, head .. "\n", as_bytes)
     local resolved, err = capture(ctx.cxx, {ctx.std, "-E", "-P", "-fdirectives-only", "-dD", "-ffreestanding",
                                             "-include", library_h, "-DCP_CHECKS=" .. ctx.checks, "-w", source})
     if not resolved then raise("bundle: %s cannot preprocess the inlined headers:\n%s", ctx.cxx, err) end
@@ -172,7 +175,7 @@ local function ast_file(ctx) return path.join(ctx.tmp, "ast.cpp") end
 -- it cannot parse it.
 local function ast(text, ctx)
     local file = ast_file(ctx)
-    io.writefile(file, text)
+    io.writefile(file, text, as_bytes)
     local args = table.join(ctx.profile.clang or {}, {ctx.std, "-fsyntax-only", "-w", "-Xclang", "-ast-dump=json",
                                                       "-Xclang", "-ast-dump-filter=cp::", file})
     local dump, err = capture(ctx.clang, args)
@@ -545,7 +548,7 @@ end
 function verify(text, ctx)
     local source = path.join(ctx.tmp, "submit.cpp")
     local binary = path.join(ctx.tmp, "submit" .. ctx.profile.exe)
-    io.writefile(source, text)
+    io.writefile(source, text, as_bytes)
     local _, err = capture(ctx.cxx, table.join({ctx.std, "-O2", "-o", binary, source}, ctx.profile.link or {}))
     if err then return false, "does not compile:\n" .. err end
     if ctx.reference then
@@ -564,7 +567,7 @@ function run(program, ctx)
     local opt = {stdin = ctx.sample, stdout = out, stderr = path.join(ctx.tmp, "err.txt"), envs = {WINEDEBUG = "-all"},
                  try = true}
     local code = ctx.runner and os.execv(ctx.runner, {program}, opt) or os.execv(program, {}, opt)
-    return {code = code, out = io.readfile(out)}
+    return {code = code, out = io.readfile(out, as_bytes)}
 end
 
 -- The unbundled solution's exit code and output on the sample.
