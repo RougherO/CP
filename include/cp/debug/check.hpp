@@ -4,7 +4,7 @@
 /// `CP_CHECKS`; nothing at all otherwise.
 /// @par Caveats
 /// - `CP_CHECK(cond)` is the one cp macro for user code: without `CP_CHECKS`, `cond` is not evaluated (it still has to
-///   compile). On failure it reports `file:line: function: check failed: cond`.
+///   compile). On failure it reports `%file:line: function: check failed: cond`.
 /// - cp::debug::check is the function behind it, for a computed message. As a function it evaluates its arguments
 ///   either way; the optimiser deletes conditions without side effects.
 /// - A failure flushes cp::io::out, writes the report to cp::io::err, and aborts. In a constant expression it is a

@@ -22,13 +22,13 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Doxygen
         env:
-          # TODO(owner): the SHA-256 of doxygen-1.12.0.linux.bin.tar.gz from the release page; empty skips the check.
-          DOXYGEN_SHA256: ""
+          # The version `xmake docs` is checked with locally; the digest GitHub publishes for the release asset.
+          DOXYGEN_SHA256: "14fa81bdc34171edb5f1f02b1d60e74802f0439b77fa44e592565d517d72df90"
         run: |
-          curl -fsSLo doxygen.tar.gz https://github.com/doxygen/doxygen/releases/download/Release_1_12_0/doxygen-1.12.0.linux.bin.tar.gz
+          curl -fsSLo doxygen.tar.gz https://github.com/doxygen/doxygen/releases/download/Release_1_18_0/doxygen-1.18.0.linux.bin.tar.gz
           if [ -n "$DOXYGEN_SHA256" ]; then echo "$DOXYGEN_SHA256  doxygen.tar.gz" | sha256sum -c -; else echo "::warning::Doxygen download not verified: DOXYGEN_SHA256 is unset"; fi
           tar xzf doxygen.tar.gz
-          echo "$PWD/doxygen-1.12.0/bin" >> "$GITHUB_PATH"
+          echo "$PWD/doxygen-1.18.0/bin" >> "$GITHUB_PATH"
       - uses: xmake-io/github-action-setup-xmake@v1
         with:
           xmake-version: "3.0.0"  # set_xmakever in xmake.lua

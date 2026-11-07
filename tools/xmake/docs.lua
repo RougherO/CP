@@ -39,6 +39,7 @@ task("docs")
         for _, page in ipairs(stale) do print("docs: synced examples into %s", page) end
         local doxygen = find_program("doxygen")
         if not doxygen then raise("docs: needs doxygen on PATH") end
+        os.tryrm(path.join(root, "build", "docs", "html"))
         os.mkdir(path.join(root, "build", "docs"))
         os.execv(doxygen, {"Doxyfile"}, {curdir = root})
         print("docs: build/docs/html/index.html")

@@ -59,7 +59,7 @@ inline auto dump_settings() noexcept -> detail::output_settings {
 
 namespace cp::io {
 
-/// @brief Under `CP_CHECKS`, writes `[file:line]` and `\n` to cp::io::err: the program got here.
+/// @brief Under `CP_CHECKS`, writes `[%file:line]` and `\n` to cp::io::err: the program got here.
 inline void dump([[maybe_unused]] debug::source_location loc = debug::source_location::current()) {
 #if CP_CHECKS
     out.flush();
@@ -68,7 +68,7 @@ inline void dump([[maybe_unused]] debug::source_location loc = debug::source_loc
 #endif
 }
 
-/// @brief Under `CP_CHECKS`, writes `[file:line]`, the values in cp::io::dump_style (formatter arguments on top), and
+/// @brief Under `CP_CHECKS`, writes `[%file:line]`, the values in cp::io::dump_style (formatter arguments on top), and
 /// `\n` to cp::io::err. Otherwise nothing, though the arguments are evaluated.
 template <class... Rest>
 void dump(detail::located_arg<detail::dump_op, writer&, detail::output_settings const&, detail::output_settings&,

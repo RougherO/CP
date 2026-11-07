@@ -69,4 +69,4 @@ The same pages and the API reference form the documentation site: run `xmake doc
 
 ## License
 
-[MIT No Attribution](LICENSE): use, change and submit cp's code anywhere; bundles need no copyright notice.
+[MIT No Attribution](https://github.com/RougherO/CP/blob/master/LICENSE): use, change and submit cp's code anywhere; bundles need no copyright notice.

@@ -20,6 +20,7 @@ using namespace cp;
 using namespace std;
 using namespace aliases;
 
+/// @brief Defines main(): reads the test count and calls solve(t) for each if `is_test_case_based`, else solve(0) once.
 #define CP_MAIN(is_test_case_based)                   \
     int main() {                                      \
         if constexpr (is_test_case_based) {           \

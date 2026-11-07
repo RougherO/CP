@@ -1,7 +1,7 @@
 #pragma once
 /// @file
 /// @brief cp::detail::precondition: the library's own checks, under `CP_CHECKS`. A failure writes
-/// `file:line: function: message` straight to standard error and aborts, so every module can check its
+/// `%file:line: function: message` straight to standard error and aborts, so every module can check its
 /// preconditions, I/O included. Contestant checks (CP_CHECK) and cp::io::dump report through cp::io::err instead.
 #include "cp/config.hpp"
 #include "cp/debug/source_location.hpp"
@@ -12,14 +12,14 @@
 
 namespace cp::detail {
 
-/// @brief `file:line` for `loc`, the file without its directory.
+/// @brief `%file:line` for `loc`, the file without its directory.
 inline auto file_line(debug::source_location loc) -> std::string {
     std::string_view file = loc.file_name();
     file.remove_prefix(file.find_last_of("/\\") + 1);  // npos + 1 == 0: no directory
     return std::string(file).append(":").append(std::to_string(loc.line()));
 }
 
-/// @brief `file:line: function: msg` and a newline: the text of every cp failure report.
+/// @brief `%file:line: function: msg` and a newline: the text of every cp failure report.
 inline auto failure_text(std::string_view msg, debug::source_location loc) -> std::string {
     std::string text;
     if (loc.line() != 0) text.append(file_line(loc)).append(": ").append(loc.function_name()).append(": ");
