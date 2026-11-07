@@ -280,6 +280,7 @@ private:
             kind != detail::io_kind::none,
             "cp::io::reader cannot read this type: define void cp_read(cp::io::reader&, T&) in its namespace");
         static_assert(kind != detail::io_kind::formatter, "cp::io: a formatter is an argument of read, not a value");
+        static_assert(!std::is_const_v<T>, "cp::io::reader cannot read into const (such as the keys of a std::map)");
         if (m_error) return;
         if constexpr (kind == detail::io_kind::formatted) {
             detail::input_settings local = s;

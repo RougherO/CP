@@ -61,11 +61,12 @@ int main() {
 | `bool` | a number, non-zero is `true` | `1`/`0` (or `true`/`false`) |
 | `std::string` | one whitespace-separated word | the text |
 | `std::string_view`, string literals | — | the text |
-| ranges (`std::vector`, `std::array`, `std::map`, ...) | as many elements as the range holds | numbers separated by spaces; ranges of ranges, pairs or structs one per line |
+| ranges (`std::vector`, `std::array`, `std::map`, ...) | as many elements as the range holds (not maps or sets: their keys are `const`) | numbers separated by spaces; ranges of ranges, pairs or structs one per line |
 | `std::pair`, `std::tuple`, plain structs | each field in order | fields separated by spaces |
 | your own types | `cp_read` | `cp_write` |
 
-`signed char`/`unsigned char` (so `std::int8_t`, `std::uint8_t`) are numbers, not characters.
+`signed char`/`unsigned char` (so `std::int8_t`, `std::uint8_t`) are numbers, not characters. Nothing `const` can be read, at any depth: read a map's pairs, then insert them:
+`for (auto n = *io::read<usize>(); n--;) { auto [k, v] = *io::read<i64, i64>(); m[k] = v; }`.
 
 ## Results and errors
 
