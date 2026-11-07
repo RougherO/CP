@@ -1,4 +1,5 @@
-#include "cp/wide.hpp"
+#include "cp/detail/double_int.hpp"
+#include "cp/num/wide.hpp"
 #include <array>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -12,14 +13,14 @@
 namespace {
 
 using u64 = std::uint64_t;
-using cp::i128;
-using cp::u128;
-using u256 = cp::widen_t<u128>;
-using i256 = cp::widen_t<i128>;
-using u512 = cp::widen_t<u256>;
+using cp::num::i128;
+using cp::num::u128;
+using u256 = cp::num::widen_t<u128>;
+using i256 = cp::num::widen_t<i128>;
+using u512 = cp::num::widen_t<u256>;
 // The same widths built from the other half types, as an independent implementation to compare against.
-using u256_alt = cp::detail::double_uint<cp::detail::u128_backport>;
-using i256_alt = cp::detail::double_int<cp::detail::u128_backport>;
+using u256_alt = cp::detail::double_uint<cp::detail::double_uint<std::uint64_t>>;
+using i256_alt = cp::detail::double_int<cp::detail::double_uint<std::uint64_t>>;
 
 template <class T>
 constexpr int width_v = cp::detail::width_v<T>;
@@ -69,14 +70,14 @@ auto from_words(std::array<u64, N> const& w) {
 TEMPLATE_TEST_CASE("op_wide(a, b).widen() equals the operation on widen_t", "[wide]", std::uint8_t, std::int8_t,
                    std::uint16_t, std::int16_t, std::uint32_t, std::int32_t, u64, std::int64_t, u128, i128) {
     using T = TestType;
-    using W = cp::widen_t<T>;
+    using W = cp::num::widen_t<T>;
     STATIC_REQUIRE(width_v<W> == 2 * width_v<T>);
     STATIC_REQUIRE(std::numeric_limits<W>::is_signed == std::numeric_limits<T>::is_signed);
     auto fits = [](W x) { return static_cast<W>(static_cast<T>(x)) == x; };
     auto vs   = values<T>();
     for (T a : vs) {
         for (T b : vs) {
-            auto add = cp::add_wide(a, b), sub = cp::sub_wide(a, b), mul = cp::mul_wide(a, b);
+            auto add = cp::num::add_wide(a, b), sub = cp::num::sub_wide(a, b), mul = cp::num::mul_wide(a, b);
             REQUIRE(add.widen() == static_cast<W>(W(a) + W(b)));
             REQUIRE(sub.widen() == static_cast<W>(W(a) - W(b)));
             REQUIRE(mul.widen() == static_cast<W>(W(a) * W(b)));
@@ -90,11 +91,6 @@ TEMPLATE_TEST_CASE("op_wide(a, b).widen() equals the operation on widen_t", "[wi
                 REQUIRE(sub.overflow() == (a < b));
             }
             REQUIRE(mul.overflow() == !fits(mul.widen()));
-            if constexpr (width_v<T> >= 64) {  // the portable versions run only on MSVC and for cp's types
-                auto padd = cp::detail::add_wide_portable(a, b), psub = cp::detail::sub_wide_portable(a, b);
-                REQUIRE((padd.low == add.low && padd.high == add.high));
-                REQUIRE((psub.low == sub.low && psub.high == sub.high));
-            }
         }
     }
 }
@@ -132,18 +128,18 @@ TEST_CASE("256-bit types match the implementation built on the u128 backport", "
 }
 
 TEST_CASE("wider types nest and keep integer behaviour", "[wide]") {
-    STATIC_REQUIRE(std::is_same_v<cp::widen_t<std::uint32_t>, u64>);
-    STATIC_REQUIRE(std::is_same_v<cp::widen_t<u64>, u128>);
-    STATIC_REQUIRE(std::is_same_v<cp::widen_t<std::int64_t>, i128>);
+    STATIC_REQUIRE(std::is_same_v<cp::num::widen_t<std::uint32_t>, u64>);
+    STATIC_REQUIRE(std::is_same_v<cp::num::widen_t<u64>, u128>);
+    STATIC_REQUIRE(std::is_same_v<cp::num::widen_t<std::int64_t>, i128>);
     STATIC_REQUIRE(width_v<u512> == 512);
     STATIC_REQUIRE(std::numeric_limits<u256>::digits == 256 && std::numeric_limits<u256>::digits10 == 77);
     STATIC_REQUIRE(std::numeric_limits<i256>::digits == 255);
 
     // 128 x 128 -> 256 and 256 x 256 -> 512, at compile time.
     constexpr auto max128 = std::numeric_limits<u128>::max();
-    STATIC_REQUIRE(cp::mul_wide(max128, max128).high == max128 - 1);
-    STATIC_REQUIRE(cp::mul_wide(max128, max128).low == 1);
-    constexpr auto p = cp::mul_wide(u256(max128) << 100, u256(3) << 150);  // 2^378 scale: overflows 256 bits
+    STATIC_REQUIRE(cp::num::mul_wide(max128, max128).high == max128 - 1);
+    STATIC_REQUIRE(cp::num::mul_wide(max128, max128).low == 1);
+    constexpr auto p = cp::num::mul_wide(u256(max128) << 100, u256(3) << 150);  // 2^378 scale: overflows 256 bits
     STATIC_REQUIRE(p.overflow());
     STATIC_REQUIRE(p.widen() == u512(u256(max128) << 100) * u512(u256(3) << 150));
     STATIC_REQUIRE(p.widen() / (u512(3) << 150) == u512(max128) << 100);
@@ -167,13 +163,13 @@ TEST_CASE("wider types nest and keep integer behaviour", "[wide]") {
 }
 
 TEST_CASE("wide results support each overflow policy", "[wide]") {
-    auto [lo, hi] = cp::mul_wide(~u64{0}, ~u64{0});
+    auto [lo, hi] = cp::num::mul_wide(~u64{0}, ~u64{0});
     REQUIRE(lo == 1);
     REQUIRE(hi == ~u64{0} - 1);
 
     // Saturation: high's sign says which way the result left the range.
     auto saturating_add = [](std::int64_t a, std::int64_t b) {
-        auto r = cp::add_wide(a, b);
+        auto r = cp::num::add_wide(a, b);
         if (!r.overflow()) return r.low;
         return r.high < 0 ? std::numeric_limits<std::int64_t>::min() : std::numeric_limits<std::int64_t>::max();
     };
@@ -181,7 +177,7 @@ TEST_CASE("wide results support each overflow policy", "[wide]") {
     REQUIRE(saturating_add(INT64_MIN, -1) == INT64_MIN);
     REQUIRE(saturating_add(5, -7) == -2);
 
-    STATIC_REQUIRE(cp::sub_wide(1U, 2U).high == ~0U);
-    STATIC_REQUIRE(cp::sub_wide(1U, 2U).widen() == u64{1} - 2);
-    STATIC_REQUIRE(!cp::sub_wide(-1, 2).overflow());
+    STATIC_REQUIRE(cp::num::sub_wide(1U, 2U).high == ~0U);
+    STATIC_REQUIRE(cp::num::sub_wide(1U, 2U).widen() == u64{1} - 2);
+    STATIC_REQUIRE(!cp::num::sub_wide(-1, 2).overflow());
 }

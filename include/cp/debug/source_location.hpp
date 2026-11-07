@@ -2,16 +2,17 @@
 /// @file
 /// @brief Backport of C++20 `std::source_location`.
 /// @par Caveats
-/// - GCC, C++17: column() is always 0 (no `__builtin_COLUMN`). Use C++20 for columns.
+/// - GCC, C++17: column() is always 0 (no `__builtin_COLUMN`). Use C++20 for columns. cp's reports print lines only.
 /// - file_name()/function_name() return `char const*` like std (null-terminated literals).
 /// - function_name() format is implementation-defined (`main` vs `int main()`); display only.
-#include "cp/compat/version.hpp"
-#include <cstdint>
+#include "cp/config.hpp"
 #if defined(__cpp_lib_source_location)  // cp:since c++20
 #  include <source_location>
+#else
+#  include <cstdint>
 #endif
 
-namespace cp {
+namespace cp::debug {
 
 #if defined(__cpp_lib_source_location)  // cp:since c++20
 using std::source_location;
@@ -56,4 +57,4 @@ private:
 };
 #endif
 
-}  // namespace cp
+}  // namespace cp::debug

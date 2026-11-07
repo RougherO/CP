@@ -1,8 +1,9 @@
 // 128-bit and wider integers, and the exact (wide) operations, against the plain built-in operators.
 // Each iteration runs one operation over 1024 random operand pairs; items/s is operations per second.
-#include "cp/compat/numeric.hpp"
-#include "cp/int128.hpp"
-#include "cp/wide.hpp"
+#include "cp/detail/double_int.hpp"
+#include "cp/num/arith.hpp"
+#include "cp/num/int128.hpp"
+#include "cp/num/wide.hpp"
 #include <benchmark/benchmark.h>
 #include <cstdint>
 #include <random>
@@ -11,9 +12,9 @@
 namespace {
 
 using u64          = std::uint64_t;
-using u128_builtin = cp::detail::builtin_u128;
-using cp::detail::u128_backport;
-using u256 = cp::widen_t<cp::u128>;
+using u128_builtin = cp::num::u128;
+using u128_backport = cp::detail::double_uint<std::uint64_t>;
+using u256 = cp::num::widen_t<cp::num::u128>;
 using i64  = std::int64_t;
 
 constexpr int n = 1024;
@@ -80,11 +81,11 @@ void bm_mulhi_by_hand(benchmark::State& s) {
         [](u64 x, u64 y) { return static_cast<u64>((u128_builtin{x} * y) >> 64); });
 }
 void bm_mulhi_mul_wide(benchmark::State& s) {
-    run(s, random_values<u64>(64, 1), random_values<u64>(64, 2), [](u64 x, u64 y) { return cp::mul_wide(x, y).high; });
+    run(s, random_values<u64>(64, 1), random_values<u64>(64, 2), [](u64 x, u64 y) { return cp::num::mul_wide(x, y).high; });
 }
 void bm_mul_wide_u128(benchmark::State& s) {
     run(s, random_values<u128_builtin>(128, 1), random_values<u128_builtin>(128, 2),
-        [](u128_builtin x, u128_builtin y) { return cp::mul_wide(x, y).high; });
+        [](u128_builtin x, u128_builtin y) { return cp::num::mul_wide(x, y).high; });
 }
 BENCHMARK(bm_mulhi_by_hand);
 BENCHMARK(bm_mulhi_mul_wide);
@@ -94,7 +95,7 @@ BENCHMARK(bm_mul_wide_u128);
 void bm_mulmod(benchmark::State& s) {
     constexpr u64 m = 1'000'000'000'000'000'003ULL;
     run(s, random_values<u64>(59, 1), random_values<u64>(59, 2),
-        [](u64 x, u64 y) { return static_cast<u64>(cp::mul_wide(x, y).widen() % m); });
+        [](u64 x, u64 y) { return static_cast<u64>(cp::num::mul_wide(x, y).widen() % m); });
 }
 BENCHMARK(bm_mulmod);
 
@@ -104,16 +105,16 @@ void bm_add_plain(benchmark::State& s) {
 }
 void bm_add_wide(benchmark::State& s) {
     run(s, random_values<i64>(63, 1), random_values<i64>(63, 2), [](i64 x, i64 y) {
-        auto r = cp::add_wide(x, y);
+        auto r = cp::num::add_wide(x, y);
         return r.overflow() ? i64{0} : r.low;
     });
 }
-void bm_saturating_add(benchmark::State& s) {
-    run(s, random_values<i64>(63, 1), random_values<i64>(63, 2), [](i64 x, i64 y) { return cp::saturating_add(x, y); });
+void bm_add_sat(benchmark::State& s) {
+    run(s, random_values<i64>(63, 1), random_values<i64>(63, 2), [](i64 x, i64 y) { return cp::num::add_sat(x, y); });
 }
 BENCHMARK(bm_add_plain);
 BENCHMARK(bm_add_wide);
-BENCHMARK(bm_saturating_add);
+BENCHMARK(bm_add_sat);
 
 }  // namespace
 

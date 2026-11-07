@@ -1,4 +1,5 @@
-#include "cp/int128.hpp"
+#include "cp/detail/double_int.hpp"
+#include "cp/num/int128.hpp"
 #include <catch2/catch_test_macros.hpp>
 #include <cstdint>
 #include <functional>
@@ -8,17 +9,13 @@
 #include <utility>
 #include <vector>
 
-#if !CP_HAS_INT128
-#  error "the reference for these tests is __int128"
-#endif
-
 namespace {
 
 using u64                = std::uint64_t;
-using ubk                = cp::detail::u128_backport;
-using ibk                = cp::detail::i128_backport;
-__extension__ using u128 = unsigned __int128;
-__extension__ using i128 = __int128;
+using ubk                = cp::detail::double_uint<std::uint64_t>;
+using ibk                = cp::detail::double_int<std::uint64_t>;
+using cp::num::u128;  // the reference
+using cp::num::i128;
 
 constexpr auto to_bk(u128 x) { return (ubk(static_cast<u64>(x >> 64)) << 64) | ubk(static_cast<u64>(x)); }
 constexpr auto to_bk(i128 x) { return ibk(to_bk(static_cast<u128>(x))); }
@@ -150,18 +147,4 @@ TEST_CASE("128-bit backports work like built-in integers", "[int128]") {
     STATIC_REQUIRE(from_bk(std::numeric_limits<ibk>::min()) == std::numeric_limits<i128>::min());
     STATIC_REQUIRE(from_bk(std::numeric_limits<ibk>::max()) == std::numeric_limits<i128>::max());
     REQUIRE(std::hash<ubk>{}(ubk(1) << 64) != std::hash<ubk>{}(ubk(1)));
-}
-
-TEST_CASE("_u128 and _i128 literals", "[int128]") {
-    using namespace cp::literals;
-    STATIC_REQUIRE(340282366920938463463374607431768211455_u128 == ~cp::u128{0});
-    STATIC_REQUIRE(170141183460469231731687303715884105727_i128 == std::numeric_limits<cp::i128>::max());
-    STATIC_REQUIRE(0xffff'ffff'ffff'ffff'ffff'ffff'ffff'ffff_u128 == ~cp::u128{0});
-    STATIC_REQUIRE(0b1000_u128 == 8);
-    STATIC_REQUIRE(017_u128 == 15);
-    STATIC_REQUIRE(0_i128 == 0);
-    STATIC_REQUIRE(-5_i128 == -5);
-    STATIC_REQUIRE(18446744073709551616_u128 == cp::u128{1} << 64);
-    STATIC_REQUIRE(std::is_same_v<decltype(1_u128), cp::u128>);
-    STATIC_REQUIRE(std::is_same_v<decltype(1_i128), cp::i128>);
 }

@@ -1,4 +1,4 @@
-#include "cp/compat/inplace_vector.hpp"
+#include "cp/ds/static_vector.hpp"
 #include "lifetime.hpp"
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -16,7 +16,7 @@
 namespace {
 
 template <class T, std::size_t N>
-using bp = cp::detail::inplace_vector_backport<T, N>;
+using sv = cp::ds::static_vector<T, N>;  // the backport before C++26, std::inplace_vector from C++26
 
 // One suite, run against the backport and (from C++26) std::inplace_vector.
 template <template <class, std::size_t> class V>
@@ -24,11 +24,7 @@ struct family {
     template <class T, std::size_t N>
     using type = V<T, N>;
 };
-#if defined(__cpp_lib_inplace_vector) && __cpp_lib_inplace_vector >= 202603L
-using families = std::tuple<family<bp>, family<std::inplace_vector>>;
-#else
-using families = std::tuple<family<bp>>;
-#endif
+using families = std::tuple<family<sv>>;
 
 template <template <class, std::size_t> class V>
 void constructors() {
@@ -114,14 +110,12 @@ void lifetime() {
 
 }  // namespace
 
-TEST_CASE("backport special members are trivial exactly when C++26 requires", "[inplace_vector]") {
-    STATIC_REQUIRE(std::is_trivially_copyable_v<bp<int, 4>>);
-    STATIC_REQUIRE(!std::is_trivially_copyable_v<bp<tracked, 4>>);
-    STATIC_REQUIRE(std::is_empty_v<bp<tracked, 0>>);
-    STATIC_REQUIRE(std::is_trivially_copyable_v<bp<tracked, 0>>);
-    STATIC_REQUIRE(std::is_nothrow_move_constructible_v<bp<tracked, 4>>);
+TEST_CASE("special members are trivial exactly when T's are", "[inplace_vector]") {
+    STATIC_REQUIRE(std::is_trivially_copyable_v<sv<int, 4>>);
+    STATIC_REQUIRE(!std::is_trivially_copyable_v<sv<tracked, 4>>);
+    STATIC_REQUIRE(std::is_nothrow_move_constructible_v<sv<tracked, 4>>);
 #if defined(__cpp_lib_inplace_vector) && __cpp_lib_inplace_vector >= 202603L
-    STATIC_REQUIRE(std::is_same_v<cp::inplace_vector<int, 3>, std::inplace_vector<int, 3>>);
+    STATIC_REQUIRE(std::is_same_v<cp::ds::static_vector<int, 3>, std::inplace_vector<int, 3>>);
 #endif
 }
 

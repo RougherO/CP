@@ -1,20 +1,32 @@
 #pragma once
 /// @file
-/// @brief Every public cp header (not cp/aliases.hpp, which is opt-in).
+/// @brief Every module in cp library
 #include "cp/config.hpp"
 
-#include "cp/compat/bit.hpp"
-#include "cp/compat/inplace_vector.hpp"
-#include "cp/compat/iterator.hpp"
-#include "cp/compat/meta.hpp"
-#include "cp/compat/numeric.hpp"
-#include "cp/compat/ranges.hpp"
-#include "cp/compat/source_location.hpp"
-#include "cp/compat/span.hpp"
-#include "cp/compat/utility.hpp"
-#include "cp/compat/version.hpp"
+// IWYU pragma: begin_exports
+#include "cp/aliases/aliases.hpp"
+#include "cp/bits/bits.hpp"
+#include "cp/debug/debug.hpp"
+#include "cp/ds/ds.hpp"
+#include "cp/io/io.hpp"
+#include "cp/num/num.hpp"
+#include "cp/sys/sys.hpp"
+#include "cp/traits/traits.hpp"
+#include "cp/util/util.hpp"
+#include "cp/views/views.hpp"
+// IWYU pragma: end_exports
 
-#include "cp/int128.hpp"
-#include "cp/wide.hpp"
+using namespace cp;
+using namespace std;
+using namespace aliases;
 
-#include "cp/sys/cpu.hpp"
+#define CP_MAIN(is_test_case_based)                   \
+    int main() {                                      \
+        if constexpr (is_test_case_based) {           \
+            for (auto t = *io::read<usize>(); t--;) { \
+                solve(t);                             \
+            }                                         \
+        } else {                                      \
+            solve(0);                                 \
+        }                                             \
+    }

@@ -10,14 +10,13 @@
 /// - As in std, `iota(a, b)` needs bounds of the same signedness (`iota(0, v.size())` does not
 ///   compile), and different types (`iota(0, 5LL)`) give an end sentinel that classic
 ///   algorithms reject. Use one type for both bounds.
-#include "cp/compat/version.hpp"
+#include "cp/config.hpp"
 #if defined(__cpp_lib_ranges)  // cp:since c++20
-#  include <ranges>
+#  include <ranges>            // IWYU pragma: keep (views is an alias of std::views)
 #else
-#  include "cp/compat/meta.hpp"
-#  include "cp/compat/utility.hpp"
+#  include "cp/traits/traits.hpp"
 #  include "cp/detail/precondition.hpp"
-#  include <cstddef>
+#  include "cp/detail/range.hpp"
 #  include <iterator>
 #  include <type_traits>
 #  include <utility>
@@ -45,18 +44,29 @@ public:
     /// @brief Random-access iterator yielding values (not references).
     class iterator {
     public:
+        ///@{
+        /// @brief Member types, as for a random-access iterator.
         using iterator_category = std::random_access_iterator_tag;
         using value_type        = W;
-        using difference_type   = std::conditional_t<(sizeof(W) < sizeof(long long)), long long, std::ptrdiff_t>;
+        using difference_type   = long long;
         using pointer           = void;
         using reference         = W;
+        ///@}
 
+        ///@{
+        /// @brief At `value` (default: `W{}`).
         constexpr iterator() noexcept = default;
         constexpr explicit iterator(W value) noexcept : m_value(value) { }
+        ///@}
 
+        ///@{
+        /// @brief The current value, or the one `n` steps ahead.
         constexpr auto operator*() const noexcept { return m_value; }
         constexpr auto operator[](difference_type n) const noexcept { return W(m_value + n); }
+        ///@}
 
+        ///@{
+        /// @brief Random-access iterator movement.
         constexpr auto operator++() noexcept -> iterator& {
             ++m_value;
             return *this;
@@ -91,6 +101,9 @@ public:
             // unsigned W: subtract in the wider signed type so b > a gives a negative distance
             return difference_type(a.m_value) - difference_type(b.m_value);
         }
+        ///@}
+        ///@{
+        /// @brief Comparisons by value; never equal to unreachable_sentinel.
         friend constexpr auto operator==(iterator a, iterator b) noexcept { return a.m_value == b.m_value; }
         friend constexpr auto operator!=(iterator a, iterator b) noexcept { return a.m_value != b.m_value; }
         friend constexpr auto operator<(iterator a, iterator b) noexcept { return a.m_value < b.m_value; }
@@ -99,6 +112,7 @@ public:
         friend constexpr auto operator>=(iterator a, iterator b) noexcept { return a.m_value >= b.m_value; }
         friend constexpr auto operator==(iterator, unreachable_sentinel) noexcept { return false; }
         friend constexpr auto operator!=(iterator, unreachable_sentinel) noexcept { return true; }
+        ///@}
 
     private:
         W m_value{};
@@ -107,13 +121,19 @@ public:
     /// @brief End of a view whose bound type differs from `W`; compares with the usual conversions.
     class sentinel {
     public:
+        ///@{
+        /// @brief At `bound` (default: `Bound{}`).
         constexpr sentinel() noexcept = default;
         constexpr explicit sentinel(Bound bound) noexcept : m_bound(bound) { }
+        ///@}
 
+        ///@{
+        /// @brief Iterator reached the bound.
         friend constexpr auto operator==(iterator it, sentinel s) noexcept { return s.equals(it); }
         friend constexpr auto operator==(sentinel s, iterator it) noexcept { return s.equals(it); }
         friend constexpr auto operator!=(iterator it, sentinel s) noexcept { return !s.equals(it); }
         friend constexpr auto operator!=(sentinel s, iterator it) noexcept { return !s.equals(it); }
+        ///@}
 
     private:
         constexpr auto equals(iterator it) const noexcept {
@@ -123,8 +143,11 @@ public:
         Bound m_bound{};
     };
 
+    /// @brief `[first, last)`.
     constexpr iota_view(W first, Bound last) noexcept : m_first(first), m_last(last) { }
 
+    ///@{
+    /// @brief Iterator to `first`; iterator, sentinel or unreachable_sentinel for the end.
     constexpr auto begin() const noexcept { return iterator(m_first); }
     constexpr auto end() const noexcept {
         if constexpr (is_common) {
@@ -135,12 +158,14 @@ public:
             return unreachable_sentinel{};
         }
     }
+    ///@}
     /// @brief Number of values; bounded views only.
     template <bool B = is_bounded, std::enable_if_t<B, int> = 0>
     constexpr auto size() const noexcept {
-        using U = std::make_unsigned_t<std::common_type_t<W, Bound> >;
+        using U = std::make_unsigned_t<std::common_type_t<W, Bound>>;
         return static_cast<U>(static_cast<U>(m_last) - static_cast<U>(m_first));
     }
+    /// @brief No values; bounded views only.
     template <bool B = is_bounded, std::enable_if_t<B, int> = 0>
     [[nodiscard]] constexpr auto empty() const noexcept {
         return begin() == end();
@@ -164,7 +189,7 @@ struct iota_fn {
         class W, class B,
         std::enable_if_t<is_integer_v<W> && is_integer_v<B> && std::is_signed_v<W> == std::is_signed_v<B>, int> = 0>
     constexpr auto operator()(W first, B last) const {
-        precondition(cmp_less_equal(first, last), "views::iota: first > last");
+        detail::precondition(first <= last, "views::iota: first > last");  // same signedness: plain <
         return iota_view<W, B>(first, last);
     }
 };
@@ -173,14 +198,18 @@ struct iota_fn {
 template <class R>
 class reverse_view {
 public:
+    /// @brief Views (or takes) `r`.
     constexpr explicit reverse_view(R&& r) : m_range(std::forward<R>(r)) { }
 
-    constexpr auto begin() { return std::make_reverse_iterator(std::end(m_range)); }
-    constexpr auto end() { return std::make_reverse_iterator(std::begin(m_range)); }
-    constexpr auto begin() const { return std::make_reverse_iterator(std::end(m_range)); }
-    constexpr auto end() const { return std::make_reverse_iterator(std::begin(m_range)); }
+    ///@{
+    /// @brief Range members, reversed.
+    constexpr auto begin() { return std::make_reverse_iterator(range_end(m_range)); }
+    constexpr auto end() { return std::make_reverse_iterator(range_begin(m_range)); }
+    constexpr auto begin() const { return std::make_reverse_iterator(range_end(m_range)); }
+    constexpr auto end() const { return std::make_reverse_iterator(range_begin(m_range)); }
     constexpr auto size() const { return std::size(m_range); }
-    [[nodiscard]] constexpr auto empty() const { return std::begin(m_range) == std::end(m_range); }
+    [[nodiscard]] constexpr auto empty() const { return range_begin(m_range) == range_end(m_range); }
+    ///@}
 
 private:
     R m_range;  // reference for lvalues, value for rvalues
@@ -188,6 +217,8 @@ private:
 
 /// @brief Function object behind cp::views::reverse; also usable as `r | views::reverse`.
 struct reverse_fn {
+    ///@{
+    /// @brief `r` reversed.
     template <class R>
     constexpr auto operator()(R&& r) const {
         return reverse_view<R>(std::forward<R>(r));
@@ -196,6 +227,7 @@ struct reverse_fn {
     friend constexpr auto operator|(R&& r, reverse_fn f) {
         return f(std::forward<R>(r));
     }
+    ///@}
 };
 
 }  // namespace detail
