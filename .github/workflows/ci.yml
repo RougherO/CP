@@ -1,0 +1,82 @@
+# Tests every compiler x language level (xmake matrix): GCC and Clang on Linux, MinGW natively on Windows. Checks the
+# guide's examples (xmake docs --check).
+name: ci
+
+on:
+  push:
+    branches: [master, experimental]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  matrix:
+    name: ${{ matrix.toolchain }}
+    runs-on: ubuntu-latest
+    # Arch has the compilers the C++26 cells need (GCC 16, Clang 23) and xmake as packages.
+    container: archlinux:latest
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain: [gcc, clang]
+    env:
+      XMAKE_ROOT: y  # the container runs as root
+    steps:
+      - name: Install the toolchain
+        run: |
+          pacman -Syu --noconfirm --needed git base-devel xmake gcc clang lld
+      - uses: actions/checkout@v4
+      - name: Versions
+        run: |
+          xmake --version | head -1
+          ${{ matrix.toolchain == 'clang' && 'clang++' || 'g++' }} --version | head -1
+      - name: Package cache (Catch2)
+        uses: actions/cache@v4
+        with:
+          path: ~/.xmake/packages
+          key: xmake-packages-${{ matrix.toolchain }}-${{ hashFiles('xmake.lua') }}
+      # xmake asks before installing Catch2; CI answers yes here, the tasks themselves never do.
+      - name: Tests and bundles, C++17/20/23/26
+        run: yes | xmake matrix --toolchains=${{ matrix.toolchain }}
+
+  # Native Windows: MSYS2 UCRT64 with the packages docs/guide/getting-started.md lists; clang++ is for the bundler's
+  # tree-shaking.
+  windows:
+    name: windows (mingw)
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-clang
+            mingw-w64-ucrt-x86_64-xmake
+      - name: Versions
+        run: |
+          xmake --version | head -1
+          g++ --version | head -1
+      # xmake asks before installing Catch2; CI answers yes here, the tasks themselves never do.
+      - name: Tests and bundles, C++17/20/23/26
+        run: yes | xmake matrix --toolchains=mingw
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: "3.0.0"  # set_xmakever in xmake.lua
+      - name: Check the examples in the guide
+        run: xmake docs --check

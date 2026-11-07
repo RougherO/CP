@@ -1,5 +1,5 @@
 -- xmake matrix [--toolchains=gcc,clang,mingw] [--stds=17,20,23,26] [--bundles=y]: debug tests per cell (mingw runs
--- with wine), and every example bundled for that compiler and level (the 64 KiB gate).
+-- natively on Windows, else with wine), and every example bundled for that compiler and level (the 64 KiB gate).
 task("matrix")
     set_category("plugin")
     set_menu {
@@ -44,7 +44,7 @@ task("matrix")
             for _, std in ipairs(option.get("stds"):split(",")) do
                 local name = toolchain .. "-c++" .. std
                 local windows = toolchain == "mingw"
-                local runs    = not windows or wine
+                local runs    = not windows or is_host("windows") or wine
                 local err
                 try {
                     function ()
