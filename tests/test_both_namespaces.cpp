@@ -141,7 +141,7 @@ TEST_CASE("every public name resolves with std and every cp module open", "[all]
         err.write(line);
         auto hex = *read<int>(base(16) | float_format(chars_format::general) | skip_ws(false));
         writeln((range_sep(",") | field_sep(","))(a), hex,
-                width(2) | fill('0') | show_sign() | bool_alpha() | quote() | field_names() | wrap(80) |
+                width(2) | fill('0') | show_plus() | bool_alpha() | quote() | field_names() | wrap(80) |
                     range_bracket("[", "]") | field_bracket("(", ")") | arg_sep(" ") |
                     float_format(chars_format::fixed) | precision(3),
                 1);

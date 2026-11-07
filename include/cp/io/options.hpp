@@ -35,19 +35,21 @@ struct output_settings {
     int base                          = 10;   ///< Integer base, 2–36; digits above 9 are lower-case letters.
     int width                         = 0;    ///< Minimum integer width, padded on the left.
     char fill                         = ' ';  ///< Padding character; `'0'` pads after the sign, as `std::format` does.
-    bool show_sign                    = false;                     ///< `+` before non-negative integers.
+    bool show_plus                    = false;                     ///< `+` before non-negative integers.
     std::chars_format float_format    = std::chars_format::fixed;  ///< As for `std::to_chars`.
     int precision                     = 9;      ///< Digits after the point; negative: shortest round-trip.
     bool bool_alpha                   = false;  ///< `true`/`false` instead of `1`/`0`.
     std::string_view arg_sep          = " ";    ///< Between the arguments of one call.
     std::string_view const* range_sep = detail::default_range_sep.data();  ///< Per nesting level, innermost first.
     std::size_t range_sep_count = detail::default_range_sep.size();  ///< Levels in range_sep; deeper reuse the last.
-    std::string_view field_sep  = " ";         ///< Between the fields of tuple-likes and plain structs.
-    std::string_view range_open, range_close;  ///< Around every range.
-    std::string_view field_open, field_close;  ///< Around every tuple-like and plain struct.
-    bool quote       = false;                  ///< Strings in `"…"`, chars in `'…'`, escaped.
-    bool field_names = false;                  ///< Plain structs as `name: value` where names are known.
-    int wrap         = 0;  ///< Break ranges and records wider than this, one element per line; 0: never.
+    std::string_view field_sep  = " ";  ///< Between the fields of tuple-likes and plain structs.
+    std::string_view range_open;        ///< Before every range.
+    std::string_view range_close;       ///< After every range.
+    std::string_view field_open;        ///< Before every tuple-like and plain struct.
+    std::string_view field_close;       ///< After every tuple-like and plain struct.
+    bool quote       = false;           ///< Strings in `"…"`, chars in `'…'`, escaped.
+    bool field_names = false;           ///< Plain structs as `name: value` where names are known.
+    int wrap         = 0;               ///< Break ranges and records wider than this, one element per line; 0: never.
 };
 
 /// @brief Everything a formatter can set for reading; the members hold the defaults.
@@ -119,12 +121,14 @@ namespace cp::detail {
 /// @brief True for cp::io::formatting types (formatters).
 template <class T>
 inline constexpr bool is_formatter_v = false;
+/// @brief True: a formatter.
 template <class... L>
 inline constexpr bool is_formatter_v<io::formatting<L...>> = true;
 
 /// @brief True for cp::io::formatted types.
 template <class T>
 inline constexpr bool is_formatted_v = false;
+/// @brief True: a formatted value.
 template <class F, class... Ts>
 inline constexpr bool is_formatted_v<io::formatted<F, Ts...>> = true;
 
@@ -163,7 +167,8 @@ struct read_layer {
 /// @brief Two fields set together (brackets), writing only.
 template <std::string_view detail::output_settings::* Open, std::string_view detail::output_settings::* Close>
 struct bracket_layer {
-    std::string_view open, close;  ///< The brackets.
+    std::string_view open;   ///< The opening bracket.
+    std::string_view close;  ///< The closing bracket.
     /// @brief Sets both fields.
     constexpr void write(detail::output_settings& s) const noexcept {
         s.*Open  = open;
@@ -218,8 +223,8 @@ constexpr auto fill(char c) noexcept {
     return detail::one_layer(detail::write_layer<char, &detail::output_settings::fill>{c});
 }
 /// @brief `+` before non-negative integers.
-constexpr auto show_sign(bool on = true) noexcept {
-    return detail::one_layer(detail::write_layer<bool, &detail::output_settings::show_sign>{on});
+constexpr auto show_plus(bool on = true) noexcept {
+    return detail::one_layer(detail::write_layer<bool, &detail::output_settings::show_plus>{on});
 }
 /// @brief `true`/`false` instead of `1`/`0`.
 constexpr auto bool_alpha(bool on = true) noexcept {

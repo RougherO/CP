@@ -497,7 +497,7 @@ io::defaults()                               // the identity: the defaults
 | `base(b)` | both | 10 | integer base, 2–36 |
 | `float_format(f)` | both | read: `general`; write: `fixed` | `std::chars_format` |
 | `precision(p)` | write | 9 | digits after the point; negative: shortest round-trip |
-| `width(w)`, `fill(c)`, `show_sign(b = true)` | write | 0, `' '`, off | integer padding and `+` |
+| `width(w)`, `fill(c)`, `show_plus(b = true)` | write | 0, `' '`, off | integer padding and `+` |
 | `bool_alpha(b = true)` | write | off | `true`/`false` instead of `1`/`0` |
 | `skip_ws(b)` | read | on | whether reading a `char` skips whitespace |
 | `arg_sep(s)` | write | `" "` | between the arguments of one call or formatted value |

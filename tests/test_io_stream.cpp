@@ -309,7 +309,7 @@ TEST_CASE("formatters govern the arguments after them, or the values they wrap",
     REQUIRE(written([](writer& w) { w.write(width(4)(-5), 7); }) == "  -5 7");
     REQUIRE(written([](writer& w) { w.write(width(4) | fill('0'), -5, 7); }) == "-005 0007");
     REQUIRE(written([](writer& w) { w.write(width(2), 12345); }) == "12345");
-    REQUIRE(written([](writer& w) { w.write(show_sign(), 7, -7, 0); }) == "+7 -7 +0");
+    REQUIRE(written([](writer& w) { w.write(show_plus(), 7, -7, 0); }) == "+7 -7 +0");
     REQUIRE(written([](writer& w) { w.write(base(16), 255, -255); }) == "ff -ff");
     REQUIRE(written([](writer& w) { w.write(precision(3) | precision(2), 3.14159); }) == "3.14");  // right wins
     REQUIRE(written([](writer& w) { w.write(float_format(std::chars_format::general) | precision(-1), 0.1, 1e300); }) ==

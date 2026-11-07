@@ -131,7 +131,7 @@ them for that call only.
 | `base(b)` | yes | yes | 10 (2–36) |
 | `float_format(f)` | yes | yes | `general` reading, `fixed` writing (`std::chars_format`) |
 | `precision(p)` | | yes | 9 digits after the point; negative: shortest exact |
-| `width(w)`, `fill(c)`, `show_sign()` | | yes | 0, `' '`, no `+` (integers) |
+| `width(w)`, `fill(c)`, `show_plus()` | | yes | 0, a space, no `+` (integers) |
 | `bool_alpha()` | | yes | `1`/`0` |
 | `skip_ws(b)` | yes | | `char` skips whitespace |
 | `arg_sep(s)` | | yes | `" "` between arguments |

@@ -292,12 +292,12 @@ private:
     template <class T>
     void m_write_integer(T v, detail::output_settings const& o) {
         // The fast path needs the whole number in the buffer: true up to ~800-bit integers (min_capacity bytes).
-        if (CP_LIKELY(o.base == 10 && o.width == 0 && !o.show_sign && detail::max_decimal_chars_v<T> <= min_capacity)) {
+        if (CP_LIKELY(o.base == 10 && o.width == 0 && !o.show_plus && detail::max_decimal_chars_v<T> <= min_capacity)) {
             m_pos = detail::format_int(m_reserve(detail::max_decimal_chars_v<T>), v);
             return;
         }
         bool const negative = v < 0;
-        char const sign     = negative ? '-' : o.show_sign ? '+' : '\0';
+        char const sign     = negative ? '-' : o.show_plus ? '+' : '\0';
         std::array<char, static_cast<std::size_t>(detail::max_int_chars_v<T>)> tmp{};
         char const* digits = tmp.data();
         char const* end    = detail::format_unsigned(tmp.data(), detail::unsigned_abs(v), o.base);
