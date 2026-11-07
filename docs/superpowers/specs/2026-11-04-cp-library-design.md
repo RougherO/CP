@@ -453,27 +453,28 @@ is a formatter object in `cp::io` passed to the call that needs it.
 
 ```cpp
 io::writeln(f1, x1, x2, f2, x3, x4);         // f1 → x1, x2; f2 → x3, x4
-io::writeln(x0, f1, x1, io::with(), x2);     // x0, x2 with the defaults
+io::writeln(x0, f1, x1, io::defaults(), x2); // x0, x2 with the defaults
 io::writeln("ans:", py(v), x);               // py(v): only v is decorated
-io::read(io::base(16), a, b, io::with(), c); // a, b hex; c decimal
+io::read(io::base(16), a, b, io::defaults(), c); // a, b hex; c decimal
 auto h = *io::read<int>(io::base(16));       // value form
 constexpr auto P = io::precision(12);        // a setting wanted everywhere: a constant passed each time
 auto py = io::range_sep(", ") | io::range_bracket("[", "]") | io::field_bracket("(", ")");
-io::with()                                   // the identity: the defaults
-io::with(a, b, c)                            // == a | b | c; arguments may be formatters or presets
+io::defaults()                               // the identity: the defaults
 ```
 
 - **Positional:** a formatter argument governs the arguments after it, up
   to the next formatter argument or the end of the call. Formatters
-  **replace** each other: `f2` means defaults + `f2`, so `io::with()`
-  restores the default output. Layering is explicit: `f1 | f2`.
+  **replace** each other: `f2` means defaults + `f2`, so `io::defaults()`
+  restores the default output. Layering is explicit, and `|` is the only
+  way to combine: `f1 | f2`.
 - **Wrapped:** `f(values...)` returns a **formatted value** (references to
   the values plus `f`) that decorates only those values, on top of the
   formatter governing it, so `writeln(a, py(v), b)` needs no reset. It
   holds references: use it within the full expression, as with
-  `std::forward_as_tuple`. Formatters are plain values, safe to keep.
+  `std::forward_as_tuple`. A formatter keeps its strings as `string_view`:
+  keep one only while they live. Lifetimes are the user's responsibility.
 - `f | g` applies `f`, then `g`: on the same field the right one wins;
-  `with() | f` behaves as `f`.
+  `defaults() | f` behaves as `f`.
 - The separator before an argument is the `arg_sep` of the formatter that
   governs that argument.
 - Implementation: an expression template. `|` concatenates the layers into

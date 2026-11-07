@@ -42,9 +42,6 @@ None of these affect GCC or Clang, including MinGW GCC on Windows (Codeforces).
 
 Deferred minors from the final review, and open questions:
 
-- `io/options.hpp`: the file comment says formatters are "safe to keep"; one built from a temporary `std::string`
-  (`range_sep(std::string(...))`) holds a dangling `string_view` (use-after-free, ASan-confirmed). Say "safe to keep
-  when built from literals or strings that outlive them".
 - `io/writer.hpp` file comment: still says struct members use the argument separator and describes the old two-level
   layout; they use `field_sep`, and layout follows nesting levels.
 - `wrap`: measures each value alone, ignoring the current column (the `[file:line]` prefix of `io::dump`, earlier values,

@@ -1,10 +1,10 @@
 #pragma once
 /// @file
 /// @brief Formatters: the settings of cp's reader and writer, passed per call. `io::precision(3)`, `io::base(16)`,
-/// `io::range_sep(", ")`, … are formatters; `f | g` combines two, `io::with(fs...)` combines many, `io::with()` is the
-/// identity (the defaults).
+/// `io::range_sep(", ")`, … are formatters; `f | g` combines them, `io::defaults()` is the identity (back to the
+/// defaults).
 /// @code
-/// io::writeln(io::precision(3), x, y, io::with(), z);   // x, y with 3 digits; z with the defaults
+/// io::writeln(io::precision(3), x, y, io::defaults(), z);   // x, y with 3 digits; z with the defaults
 /// io::writeln("ans:", io::range_sep(",")(v));           // only v is decorated
 /// io::read(io::base(16), h);                            // h read in hexadecimal
 /// @endcode
@@ -13,7 +13,8 @@
 ///   it, up to the next formatter argument, which replaces it (layer them with `|`). `f(values...)` decorates only
 ///   those values, on top of the formatter governing them.
 /// - `f(values...)` holds references to the values: use it within the full expression, as with
-///   `std::forward_as_tuple`. Formatters themselves are plain values, safe to keep.
+///   `std::forward_as_tuple`. A formatter keeps the strings it is given as `std::string_view`: keep one only while
+///   they live (literals always do; `io::range_sep(std::string(…))` dangles after its statement).
 /// - `signed char` and `unsigned char` (so `std::int8_t`, `std::uint8_t`) are integers, not characters: they read
 ///   and write as numbers. Only `char` is a character. (iostreams treat all three as characters.)
 #include "cp/config.hpp"
@@ -267,11 +268,7 @@ constexpr auto wrap(int w) noexcept {
     return detail::one_layer(detail::write_layer<int, &detail::output_settings::wrap>{w});
 }
 
-/// @brief `fs` combined in order: `with(a, b)` is `a | b`; `with()` is the identity.
-template <class... Fs>
-constexpr auto with(Fs const&... fs) noexcept {
-    static_assert((detail::is_formatter_v<Fs> && ...), "cp::io::with takes formatters");
-    return (formatting<>{} | ... | fs);
-}
+/// @brief The identity: no settings, so the arguments after it get the defaults.
+constexpr auto defaults() noexcept -> formatting<> { return {}; }
 
 }  // namespace cp::io

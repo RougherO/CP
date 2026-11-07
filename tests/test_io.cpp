@@ -45,7 +45,7 @@ TEST_CASE("free readln, getline and formatter arguments on cp::io::in", "[io]") 
     auto r = run_child("ff 10 junk\nwhole line\n7", [] {
         int h = 0, d = 0;
         std::string line;
-        cp::io::readln(cp::io::base(16), h, cp::io::with(), d);
+        cp::io::readln(cp::io::base(16), h, cp::io::defaults(), d);
         cp::io::getline(line);
         auto k = cp::io::read<int>(cp::io::base(8));
         cp::io::write(h, d, line, *k);

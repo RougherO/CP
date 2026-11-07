@@ -117,11 +117,13 @@ Streams keep no settings: every call starts from the defaults below, and a forma
 them for that call only.
 
 - **As an argument**, a formatter governs the arguments after it, up to the next formatter, which replaces it:
-  `io::writeln(io::precision(3), x, y, io::with(), z)`. `io::with()` gives back the defaults.
+  `io::writeln(io::precision(3), x, y, io::defaults(), z)`. `io::defaults()` gives back the defaults.
 - **Called on values**, it decorates only those: `io::writeln("ans:", io::range_sep(",")(v), k)`. The result holds
   references, so use it in the same statement.
-- **`f | g`** applies both, the right one winning on the same setting; `io::with(f, g)` is the same. Keep presets as
-  constants: `constexpr auto py = io::range_sep(", ") | io::range_bracket("[", "]");`.
+- **`f | g`** applies both, the right one winning on the same setting. Keep presets as
+  constants: `constexpr auto py = io::range_sep(", ") | io::range_bracket("[", "]");`. A formatter holds its strings
+  as `std::string_view`, so build kept ones from literals or strings that outlive them, never from a temporary
+  `std::string`.
 - **Reading** takes them the same way: `io::read(io::base(16), h)`, `auto h = *io::read<int>(io::base(16));`.
 
 | Formatter | Reading | Writing | Default |
@@ -155,7 +157,7 @@ using namespace cp;
 int main() {
     double x = 3.14159265358979;
     io::writeln(io::precision(12), x);                // 3.141592653590: a formatter governs the arguments after it
-    io::writeln(io::precision(2), x, io::with(), x);  // 3.14 3.141592654: io::with() is back to the defaults
+    io::writeln(io::precision(2), x, io::defaults(), x);  // 3.14 3.141592654: io::defaults() is back to the defaults
 
     std::vector<int> v{1, 2, 3};
     io::writeln("v:", io::range_sep(",")(v), 4);  // v: 1,2,3 4 (calling a formatter decorates only its values)

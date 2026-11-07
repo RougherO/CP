@@ -315,11 +315,11 @@ TEST_CASE("formatters govern the arguments after them, or the values they wrap",
     REQUIRE(written([](writer& w) { w.write(float_format(std::chars_format::general) | precision(-1), 0.1, 1e300); }) ==
             "0.1 1e+300");
     REQUIRE(written([](writer& w) { w.write(bool_alpha(), true, false); }) == "true false");
-    REQUIRE(written([](writer& w) { w.write(precision(2), 1.0, with(), 1.0); }) == "1.00 1.000000000");
+    REQUIRE(written([](writer& w) { w.write(precision(2), 1.0, defaults(), 1.0); }) == "1.00 1.000000000");
     REQUIRE(written([](writer& w) { w.write(precision(2), 1.0, bool_alpha(), 1.0, true); }) ==
             "1.00 1.000000000 true");  // replace, not layer
-    REQUIRE(written([](writer& w) { w.write(with(precision(1), with(bool_alpha())), 0.25, true); }) == "0.2 true");
-    REQUIRE(written([](writer& w) { w.write(arg_sep(","), 1, 2, with(), 3); }) == "1,2 3");
+    REQUIRE(written([](writer& w) { w.write(precision(1) | bool_alpha(), 0.25, true); }) == "0.2 true");
+    REQUIRE(written([](writer& w) { w.write(arg_sep(","), 1, 2, defaults(), 3); }) == "1,2 3");
     REQUIRE(written([](writer& w) { w.write(precision(1), 1.0, precision(3)(2.0), 3.0); }) == "1.0 2.000 3.0");
     REQUIRE(written([](writer& w) { w.write(precision(2), 1.0).write(1.0); }) == "1.001.000000000");  // per call
     REQUIRE(written([](writer& w) { w.write(precision(2), user::point{1, 2}, 0.5); }) == "(1,2) 0.50");

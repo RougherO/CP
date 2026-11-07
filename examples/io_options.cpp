@@ -7,7 +7,7 @@ using namespace cp;
 int main() {
     double x = 3.14159265358979;
     io::writeln(io::precision(12), x);                // 3.141592653590: a formatter governs the arguments after it
-    io::writeln(io::precision(2), x, io::with(), x);  // 3.14 3.141592654: io::with() is back to the defaults
+    io::writeln(io::precision(2), x, io::defaults(), x);  // 3.14 3.141592654: io::defaults() is back to the defaults
 
     std::vector<int> v{1, 2, 3};
     io::writeln("v:", io::range_sep(",")(v), 4);  // v: 1,2,3 4 (calling a formatter decorates only its values)
