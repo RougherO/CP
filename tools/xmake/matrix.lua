@@ -30,8 +30,10 @@ task("matrix")
                                   {curdir = os.projectdir()})
                     end,
                     catch {function (e)
-                        local why = type(e) == "table" and (e.stderr or e.stdout) or tostring(e)
-                        failure = failure or ("bundle " .. name .. ": " .. (why:match("bundle: ([^\n]+)") or why))
+                        local why = type(e) == "table" and ((e.stdout or "") .. (e.stderr or "")) or ""
+                        if why:trim() == "" then why = tostring(e) end
+                        why = why:gsub("\27%[[%d;]*m", "")
+                        failure = failure or ("bundle " .. name .. ": " .. (why:match("bundle: (.+)") or why):trim())
                     end}
                 }
             end, {total = #examples, comax = os.default_njob()})
@@ -57,7 +59,7 @@ task("matrix")
                             if failure then raise(failure) end
                         end
                     end,
-                    catch { function (e) err = tostring(e):split("\n")[1] or "failed" end }
+                    catch { function (e) err = table.concat(table.slice(tostring(e):split("\n"), 1, 20), "\n    ") end }
                 }
                 if err then
                     table.insert(results, "FAIL " .. name .. ": " .. err)
