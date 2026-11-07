@@ -9,7 +9,7 @@
 | `clang++` | `xmake bundle`'s size reduction (step 4), for every profile; without it bundles are bigger and a warning says so |
 | MinGW-w64 GCC | bundles for Windows judges (Codeforces) |
 | `wine` (Linux, macOS) | running Windows test programs and `xmake bundle --profile=mingw --sample` |
-| Catch2 3, Google Benchmark | tests and benchmarks: xmake offers to download and build them if your system has none, and asks first |
+| Catch2 3, Google Benchmark | tests and benchmarks: xmake offers to download and build them if your system has none, and asks first; building them needs `git` and CMake (MSYS2: `git mingw-w64-ucrt-x86_64-cmake`) |
 
 cp is tested on Linux with GCC 16, Clang 23 and MinGW-w64 GCC 16 at C++17, 20, 23 and 26, on x86-64; the Windows
 programs it builds run under wine. Developing on Windows or macOS has not been tried. Other targets than x86-64
