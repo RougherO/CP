@@ -47,7 +47,7 @@ Deferred minors from the final review, and open questions:
 - `wrap`: measures each value alone, ignoring the current column (the `[file:line]` prefix of `io::dump`, earlier values,
   `name: ` prefixes). Without brackets a broken range starts with a bare newline after a trailing `arg_sep`.
 - `writer`/`reader` `m_active` is not restored if a `cp_write`/`cp_read` hook throws: an RAII guard fixes it.
-- Short formatter names (`base`, `width`, `precision`, `fill`, `wrap`, `quote`) collide with user globals when
+- Short formatter names (`base`, `width`, `precision`, `fill`, `wrap`) collide with user globals when
   `cp::io` is opened (`const long long base = 131;` makes `base` ambiguous). Worth a caveat in getting-started.
 - **Open (owner to decide):** C++26 structured binding packs (`auto& [...fields] = t;`, `__cpp_structured_bindings >=
   202411L`, GCC 16 and Clang 23) for aggregates with no field limit and no brace-probing caveats; and whether

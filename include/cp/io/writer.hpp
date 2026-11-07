@@ -160,19 +160,19 @@ private:
             cp_write(*this, x);
             m_active = outer;
         } else if constexpr (kind == detail::io_kind::boolean) {
-            if (s.bool_alpha) {
+            if (s.show_bool_words) {
                 put(x ? std::string_view("true") : std::string_view("false"));
             } else {
                 put(x ? '1' : '0');
             }
         } else if constexpr (kind == detail::io_kind::character) {
-            if (s.quote) {
+            if (s.show_quotes) {
                 m_put_quoted(std::string_view(&x, 1), '\'');
             } else {
                 put(x);
             }
         } else if constexpr (kind == detail::io_kind::string) {
-            if (s.quote) {
+            if (s.show_quotes) {
                 m_put_quoted(std::string_view(x), '"');
             } else {
                 put(std::string_view(x));
@@ -198,7 +198,7 @@ private:
                 detail::for_each_field(x, [&](auto const& f) {
                     item([&] {
                         if constexpr (detail::has_field_names_v<T>) {
-                            if (s.field_names) {
+                            if (s.show_field_names) {
                                 put(detail::field_names_v<T>[i]);
                                 put(": ");
                             }

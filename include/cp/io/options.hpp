@@ -38,7 +38,7 @@ struct output_settings {
     bool show_plus                    = false;                     ///< `+` before non-negative integers.
     std::chars_format float_format    = std::chars_format::fixed;  ///< As for `std::to_chars`.
     int precision                     = 9;      ///< Digits after the point; negative: shortest round-trip.
-    bool bool_alpha                   = false;  ///< `true`/`false` instead of `1`/`0`.
+    bool show_bool_words              = false;  ///< `true`/`false` instead of `1`/`0`.
     std::string_view arg_sep          = " ";    ///< Between the arguments of one call.
     std::string_view const* range_sep = detail::default_range_sep.data();  ///< Per nesting level, innermost first.
     std::size_t range_sep_count = detail::default_range_sep.size();  ///< Levels in range_sep; deeper reuse the last.
@@ -47,9 +47,9 @@ struct output_settings {
     std::string_view range_close;       ///< After every range.
     std::string_view field_open;        ///< Before every tuple-like and plain struct.
     std::string_view field_close;       ///< After every tuple-like and plain struct.
-    bool quote       = false;           ///< Strings in `"…"`, chars in `'…'`, escaped.
-    bool field_names = false;           ///< Plain structs as `name: value` where names are known.
-    int wrap         = 0;               ///< Break ranges and records wider than this, one element per line; 0: never.
+    bool show_quotes      = false;      ///< Strings in `"…"`, chars in `'…'`, escaped.
+    bool show_field_names = false;      ///< Plain structs as `name: value` where names are known.
+    int wrap              = 0;          ///< Break ranges and records wider than this, one element per line; 0: never.
 };
 
 /// @brief Everything a formatter can set for reading; the members hold the defaults.
@@ -227,8 +227,8 @@ constexpr auto show_plus(bool on = true) noexcept {
     return detail::one_layer(detail::write_layer<bool, &detail::output_settings::show_plus>{on});
 }
 /// @brief `true`/`false` instead of `1`/`0`.
-constexpr auto bool_alpha(bool on = true) noexcept {
-    return detail::one_layer(detail::write_layer<bool, &detail::output_settings::bool_alpha>{on});
+constexpr auto show_bool_words(bool on = true) noexcept {
+    return detail::one_layer(detail::write_layer<bool, &detail::output_settings::show_bool_words>{on});
 }
 /// @brief Whether reading a `char` skips whitespace (default true).
 constexpr auto skip_ws(bool on) noexcept {
@@ -261,12 +261,12 @@ constexpr auto field_bracket(std::string_view open, std::string_view close) noex
                                                                                                            close});
 }
 /// @brief Strings in `"…"` and chars in `'…'`, with quotes, `\\`, newlines and tabs escaped.
-constexpr auto quote(bool on = true) noexcept {
-    return detail::one_layer(detail::write_layer<bool, &detail::output_settings::quote>{on});
+constexpr auto show_quotes(bool on = true) noexcept {
+    return detail::one_layer(detail::write_layer<bool, &detail::output_settings::show_quotes>{on});
 }
 /// @brief Plain structs as `name: value` where field names are known (C++20 and later).
-constexpr auto field_names(bool on = true) noexcept {
-    return detail::one_layer(detail::write_layer<bool, &detail::output_settings::field_names>{on});
+constexpr auto show_field_names(bool on = true) noexcept {
+    return detail::one_layer(detail::write_layer<bool, &detail::output_settings::show_field_names>{on});
 }
 /// @brief Ranges and records wider than `w` characters break one element per line; 0: never (default).
 constexpr auto wrap(int w) noexcept {

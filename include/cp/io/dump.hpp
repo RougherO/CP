@@ -25,8 +25,9 @@ namespace cp::io {
 /// @brief How cp::io::dump writes values: ` | ` between them, `[a, b]` ranges, `{a, b}` records with field names,
 /// quoted text, `true`/`false`, the shortest exact floats, and lines wrapped at 80 characters.
 inline constexpr auto dump_style = arg_sep(" | ") | range_sep(", ") | range_bracket("[", "]") | field_sep(", ") |
-                                   field_bracket("{", "}") | bool_alpha() | float_format(std::chars_format::general) |
-                                   precision(-1) | quote() | field_names() | wrap(80);
+                                   field_bracket("{", "}") | show_bool_words() |
+                                   float_format(std::chars_format::general) | precision(-1) | show_quotes() |
+                                   show_field_names() | wrap(80);
 
 }  // namespace cp::io
 

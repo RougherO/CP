@@ -132,14 +132,14 @@ them for that call only.
 | `float_format(f)` | yes | yes | `general` reading, `fixed` writing (`std::chars_format`) |
 | `precision(p)` | | yes | 9 digits after the point; negative: shortest exact |
 | `width(w)`, `fill(c)`, `show_plus()` | | yes | 0, a space, no `+` (integers) |
-| `bool_alpha()` | | yes | `1`/`0` |
+| `show_bool_words()` | | yes | `1`/`0` |
 | `skip_ws(b)` | yes | | `char` skips whitespace |
 | `arg_sep(s)` | | yes | `" "` between arguments |
 | `range_sep(s1, s2, ...)` | | yes | `" "`, `"\n"`: one separator per nesting level, innermost first; deeper levels reuse the last |
 | `field_sep(s)` | | yes | `" "` between the fields of pairs, tuples and structs |
 | `range_bracket(open, close)`, `field_bracket(open, close)` | | yes | none |
-| `quote()` | | yes | strings in `"…"`, chars in `'…'`, escaped |
-| `field_names()` | | yes | structs as `name: value` (from C++20; plain fields before) |
+| `show_quotes()` | | yes | strings in `"…"`, chars in `'…'`, escaped |
+| `show_field_names()` | | yes | structs as `name: value` (from C++20; plain fields before) |
 | `wrap(w)` | | yes | off; a range or struct wider than `w` goes one element per line, indented |
 
 Nesting levels: a number, string or char is level 0, a range is one above its elements, and a pair, tuple or struct

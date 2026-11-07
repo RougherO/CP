@@ -314,11 +314,11 @@ TEST_CASE("formatters govern the arguments after them, or the values they wrap",
     REQUIRE(written([](writer& w) { w.write(precision(3) | precision(2), 3.14159); }) == "3.14");  // right wins
     REQUIRE(written([](writer& w) { w.write(float_format(std::chars_format::general) | precision(-1), 0.1, 1e300); }) ==
             "0.1 1e+300");
-    REQUIRE(written([](writer& w) { w.write(bool_alpha(), true, false); }) == "true false");
+    REQUIRE(written([](writer& w) { w.write(show_bool_words(), true, false); }) == "true false");
     REQUIRE(written([](writer& w) { w.write(precision(2), 1.0, defaults(), 1.0); }) == "1.00 1.000000000");
-    REQUIRE(written([](writer& w) { w.write(precision(2), 1.0, bool_alpha(), 1.0, true); }) ==
+    REQUIRE(written([](writer& w) { w.write(precision(2), 1.0, show_bool_words(), 1.0, true); }) ==
             "1.00 1.000000000 true");  // replace, not layer
-    REQUIRE(written([](writer& w) { w.write(precision(1) | bool_alpha(), 0.25, true); }) == "0.2 true");
+    REQUIRE(written([](writer& w) { w.write(precision(1) | show_bool_words(), 0.25, true); }) == "0.2 true");
     REQUIRE(written([](writer& w) { w.write(arg_sep(","), 1, 2, defaults(), 3); }) == "1,2 3");
     REQUIRE(written([](writer& w) { w.write(precision(1), 1.0, precision(3)(2.0), 3.0); }) == "1.0 2.000 3.0");
     REQUIRE(written([](writer& w) { w.write(precision(2), 1.0).write(1.0); }) == "1.001.000000000");  // per call
@@ -353,11 +353,11 @@ struct edge {
 
 TEST_CASE("quote and field names", "[io][format]") {
     using namespace cp::io;
-    REQUIRE(written([](writer& w) { w.write(quote()(std::string("a \"b\"\n"), 'c', '\'', "t\\")); }) ==
+    REQUIRE(written([](writer& w) { w.write(show_quotes()(std::string("a \"b\"\n"), 'c', '\'', "t\\")); }) ==
             R"("a \"b\"\n" 'c' '\'' "t\\")");
-    REQUIRE(written([](writer& w) { w.write(quote()(std::vector<std::string>{"x"}), "y"); }) == "\"x\" y");
+    REQUIRE(written([](writer& w) { w.write(show_quotes()(std::vector<std::string>{"x"}), "y"); }) == "\"x\" y");
     auto named =
-        written([](writer& w) { w.write((field_names() | field_bracket("{", "}") | field_sep(", "))(edge{1, 2, 5})); });
+        written([](writer& w) { w.write((show_field_names() | field_bracket("{", "}") | field_sep(", "))(edge{1, 2, 5})); });
     if constexpr (cp::detail::has_field_names_v<edge>) {
         REQUIRE(cp::detail::field_names_v<edge>[1] == "v");
         REQUIRE(named == "{u: 1, v: 2, w: 5}");
@@ -367,7 +367,7 @@ TEST_CASE("quote and field names", "[io][format]") {
 #if defined(__GNUC__) && !defined(__clang__) && __cplusplus >= 202002L
     REQUIRE(cp::detail::has_field_names_v<edge>);  // the C++20 path is really taken where it should be
 #endif
-    REQUIRE(written([](writer& w) { w.write(field_names()(std::pair{1, 2})); }) == "1 2");
+    REQUIRE(written([](writer& w) { w.write(show_field_names()(std::pair{1, 2})); }) == "1 2");
 }
 
 TEST_CASE("wrap breaks wide values pprint style", "[io][format]") {
@@ -396,7 +396,7 @@ struct node {
 
 TEST_CASE("bit-field and recursive structs write", "[io][format]") {
     using namespace cp::io;
-    REQUIRE(written([](writer& w) { w.write(flags{1, 2}, field_names()(flags{3, 4})); }) == "1 2 3 4");
+    REQUIRE(written([](writer& w) { w.write(flags{1, 2}, show_field_names()(flags{3, 4})); }) == "1 2 3 4");
     node tree{1, {{2, {}}, {3, {}}}};
     auto const py = range_sep(", ") | range_bracket("[", "]") | field_sep(", ") | field_bracket("{", "}");
     REQUIRE(written([&](writer& w) { w.write(py, tree); }) == "{1, [{2, []}, {3, []}]}");

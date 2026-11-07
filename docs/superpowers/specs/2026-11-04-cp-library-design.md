@@ -426,7 +426,7 @@ Semantics:
 - Reading into a `const` object or a temporary is a compile error with a
   `static_assert` message.
 - `std::vector<bool>` is handled by its own path (proxy references).
-- `bool` is written as `0`/`1` unless the `bool_alpha` setting is on.
+- `bool` is written as `0`/`1` unless the `show_bool_words` setting is on.
 - Layout by nesting level (§8.8): a range of numbers uses the first
   `range_sep` (`" "`), a range of ranges or records the second (`"\n"`), so
   a `vector<vector<int>>`, a `map` and a `vector<pair>` print one row or
@@ -498,15 +498,15 @@ io::defaults()                               // the identity: the defaults
 | `float_format(f)` | both | read: `general`; write: `fixed` | `std::chars_format` |
 | `precision(p)` | write | 9 | digits after the point; negative: shortest round-trip |
 | `width(w)`, `fill(c)`, `show_plus(b = true)` | write | 0, `' '`, off | integer padding and `+` |
-| `bool_alpha(b = true)` | write | off | `true`/`false` instead of `1`/`0` |
+| `show_bool_words(b = true)` | write | off | `true`/`false` instead of `1`/`0` |
 | `skip_ws(b)` | read | on | whether reading a `char` skips whitespace |
 | `arg_sep(s)` | write | `" "` | between the arguments of one call or formatted value |
 | `range_sep(s1, s2, …)` | write | `(" ", "\n")` | separator inside a range of nesting level 1, 2, …; deeper levels reuse the last; any number may be given |
 | `field_sep(s)` | write | `" "` | between the fields of every tuple-like and plain struct |
 | `range_bracket(open, close)` | write | none | around every range |
 | `field_bracket(open, close)` | write | none | around every tuple-like and plain struct |
-| `quote(b = true)` | write | off | strings in `"…"`, chars in `'…'`, with `\"`, `\\`, `\n`, `\t` escaped |
-| `field_names(b = true)` | write | off | plain structs as `name: value` where names are available (§8.10) |
+| `show_quotes(b = true)` | write | off | strings in `"…"`, chars in `'…'`, with `\"`, `\\`, `\n`, `\t` escaped |
+| `show_field_names(b = true)` | write | off | plain structs as `name: value` where names are available (§8.10) |
 | `wrap(w)` | write | 0 (off) | a range or record wider than `w` breaks one element per line, indented two spaces per level (pprint style) |
 
 - **Nesting level:** numbers, strings, chars, bools and hooked user types
@@ -583,7 +583,7 @@ Aggregates (plain structs) get automatic I/O with no user code:
 - C++26 with `__cpp_impl_reflection`: reimplemented with reflection, no
   field limit. Same user-facing behaviour.
 
-**Field names** for the `field_names` setting **[owner, 2026-11-07]**:
+**Field names** for the `show_field_names` setting **[owner, 2026-11-07]**:
 reflection (`std::meta::identifier_of`) when `__cpp_impl_reflection`; else,
 when `__cpp_nontype_template_args >= 201911L` (C++20: pointers to
 subobjects as template arguments), the `__PRETTY_FUNCTION__` trick: a
@@ -653,8 +653,8 @@ then denote the same namespace, so the two using-directives don't make
   `detail::located_arg` (zero arguments: a defaulted `source_location`).
   Values start from the dump preset instead of the defaults: `arg_sep(" | ")`,
   `range_sep(", ")`, `range_bracket("[", "]")`, `field_sep(", ")`,
-  `field_bracket("{", "}")`, `bool_alpha()`, `float_format(general)` with
-  `precision(-1)`, `quote()`, `field_names()`, `wrap(80)`. Formatter
+  `field_bracket("{", "}")`, `show_bool_words()`, `float_format(general)` with
+  `precision(-1)`, `show_quotes()`, `show_field_names()`, `wrap(80)`. Formatter
   arguments (`dump(io::precision(3), d)`) and formatted values apply on top
   of the preset. Without `CP_CHECKS` its body is empty: the call
   compiles to nothing, but arguments with side effects are still evaluated
